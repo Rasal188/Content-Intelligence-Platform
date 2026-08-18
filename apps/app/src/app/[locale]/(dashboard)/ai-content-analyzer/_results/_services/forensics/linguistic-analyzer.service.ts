@@ -93,14 +93,18 @@ export class LinguisticAnalyzerService {
    */
   public static analyze(text: string): LinguisticMetrics {
     if (!text || text.trim().length === 0) {
-      return this.emptyMetrics();
+      return LinguisticAnalyzerService.emptyMetrics();
     }
 
     const cleanText = text.trim();
 
     // 1. Sentence Tokenization
-    const sentenceMatches = cleanText.match(/[^.!?]+[.!?]+(\s+|$)|[^.!?]+$/g) || [cleanText];
-    const sentences = sentenceMatches.map(s => s.trim()).filter(s => s.length > 0);
+    const sentenceMatches = cleanText.match(
+      /[^.!?]+[.!?]+(\s+|$)|[^.!?]+$/g,
+    ) || [cleanText];
+    const sentences = sentenceMatches
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
     const sentenceCount = Math.max(1, sentences.length);
 
     // 2. Word Tokenization & Sentence Lengths
@@ -108,27 +112,40 @@ export class LinguisticAnalyzerService {
     const allWords: string[] = [];
 
     for (const sentence of sentences) {
-      const words = sentence.split(/\s+/).filter(w => w.length > 0);
+      const words = sentence.split(/\s+/).filter((w) => w.length > 0);
       sentenceLengths.push(words.length);
-      allWords.push(...words.map(w => w.toLowerCase().replace(/[^a-z0-9'-]/g, "")));
+      allWords.push(
+        ...words.map((w) => w.toLowerCase().replace(/[^a-z0-9'-]/g, "")),
+      );
     }
 
     const wordCount = Math.max(1, allWords.length);
-    const avgSentenceLength = parseFloat((wordCount / sentenceCount).toFixed(1));
+    const avgSentenceLength = Number.parseFloat(
+      (wordCount / sentenceCount).toFixed(1),
+    );
 
     // 3. Sentence Length Standard Deviation (Burstiness)
-    const variance = sentenceLengths.reduce((acc, len) => acc + Math.pow(len - avgSentenceLength, 2), 0) / sentenceCount;
-    const sentenceLengthStdDev = parseFloat(Math.sqrt(variance).toFixed(2));
-    
+    const variance =
+      sentenceLengths.reduce(
+        (acc, len) => acc + (len - avgSentenceLength) ** 2,
+        0,
+      ) / sentenceCount;
+    const sentenceLengthStdDev = Number.parseFloat(
+      Math.sqrt(variance).toFixed(2),
+    );
+
     // Coefficient of variation (CV = stdDev / mean)
-    const cv = avgSentenceLength > 0 ? sentenceLengthStdDev / avgSentenceLength : 0;
+    const cv =
+      avgSentenceLength > 0 ? sentenceLengthStdDev / avgSentenceLength : 0;
 
     // Burstiness Score (0-100):
     // Human writing has high CV (> 0.50) with mixed short & long sentences (Score 70-100)
     // AI writing has low CV (< 0.32) with uniformly metered sentences (Score 10-35)
     let burstinessScore = Math.min(100, Math.round(cv * 135));
-    if (sentenceLengthStdDev >= 8.5) burstinessScore = Math.min(100, burstinessScore + 20);
-    if (sentenceLengthStdDev <= 3.5 && sentenceCount >= 3) burstinessScore = Math.max(8, burstinessScore - 25);
+    if (sentenceLengthStdDev >= 8.5)
+      burstinessScore = Math.min(100, burstinessScore + 20);
+    if (sentenceLengthStdDev <= 3.5 && sentenceCount >= 3)
+      burstinessScore = Math.max(8, burstinessScore - 25);
 
     // 4. Lexical Diversity (Type-Token Ratio & Unique Word Distribution)
     const wordFreq: Record<string, number> = {};
@@ -138,10 +155,15 @@ export class LinguisticAnalyzerService {
       }
     }
     const uniqueWords = Object.keys(wordFreq);
-    const typeTokenRatio = parseFloat((uniqueWords.length / Math.max(1, allWords.length)).toFixed(3));
-    
+    const typeTokenRatio = Number.parseFloat(
+      (uniqueWords.length / Math.max(1, allWords.length)).toFixed(3),
+    );
+
     // Vocabulary Entropy Score (0-100)
-    const vocabularyEntropyScore = Math.min(100, Math.round(typeTokenRatio * 115));
+    const vocabularyEntropyScore = Math.min(
+      100,
+      Math.round(typeTokenRatio * 115),
+    );
 
     // 5. Zipf's Law Log-Rank Curve Alignment (Measures natural human word distribution vs flat LLM distribution)
     const sortedFreqs = Object.values(wordFreq).sort((a, b) => b - a);
@@ -157,11 +179,19 @@ export class LinguisticAnalyzerService {
       zipfDeviation = zipfDeviation / topN;
     }
     // High alignment (low deviation) = natural human (score 75-100), high deviation = LLM uniformity (score 15-45)
-    const zipfDistributionScore = Math.max(10, Math.min(100, Math.round(100 - zipfDeviation * 45)));
+    const zipfDistributionScore = Math.max(
+      10,
+      Math.min(100, Math.round(100 - zipfDeviation * 45)),
+    );
 
     // 6. Passive Voice & Robotic Construction Ratio
-    const passiveMatches = cleanText.match(/\b(is|are|was|were|be|been|being)\s+([a-z]+ed|[a-z]+en|shown|built|made|held|given|taken|done|seen)\b/gi) || [];
-    const passiveVoiceRatio = parseFloat((passiveMatches.length / Math.max(1, sentenceCount)).toFixed(2));
+    const passiveMatches =
+      cleanText.match(
+        /\b(is|are|was|were|be|been|being)\s+([a-z]+ed|[a-z]+en|shown|built|made|held|given|taken|done|seen)\b/gi,
+      ) || [];
+    const passiveVoiceRatio = Number.parseFloat(
+      (passiveMatches.length / Math.max(1, sentenceCount)).toFixed(2),
+    );
     const passiveAiPenalty = Math.min(30, Math.round(passiveVoiceRatio * 20));
 
     // 7. AI Cliché & Transition Pattern Density
@@ -173,12 +203,19 @@ export class LinguisticAnalyzerService {
       }
     }
 
-    const aiTransitionDensity = parseFloat(((aiPatternMatches / wordCount) * 100).toFixed(2));
-    
+    const aiTransitionDensity = Number.parseFloat(
+      ((aiPatternMatches / wordCount) * 100).toFixed(2),
+    );
+
     // AI Transition Penalty Score (0-100):
-    let aiTransitionPenaltyScore = Math.min(100, Math.round(aiTransitionDensity * 42));
-    if (aiPatternMatches >= 2) aiTransitionPenaltyScore = Math.min(100, aiTransitionPenaltyScore + 20);
-    if (aiPatternMatches >= 3) aiTransitionPenaltyScore = Math.min(100, aiTransitionPenaltyScore + 30);
+    let aiTransitionPenaltyScore = Math.min(
+      100,
+      Math.round(aiTransitionDensity * 42),
+    );
+    if (aiPatternMatches >= 2)
+      aiTransitionPenaltyScore = Math.min(100, aiTransitionPenaltyScore + 20);
+    if (aiPatternMatches >= 3)
+      aiTransitionPenaltyScore = Math.min(100, aiTransitionPenaltyScore + 30);
 
     // 8. Anti-Bypass / Humanizer Artifact Detection
     let humanizerMatches = 0;
@@ -192,7 +229,12 @@ export class LinguisticAnalyzerService {
 
     // 9. Repeated Consecutive Sentences / Structural Loops (Plagiarism & AI Duplicate Patterns)
     let duplicateSentenceCount = 0;
-    const lowerSentences = sentences.map(s => s.toLowerCase().replace(/[^a-z0-9 ]/g, "").trim());
+    const lowerSentences = sentences.map((s) =>
+      s
+        .toLowerCase()
+        .replace(/[^a-z0-9 ]/g, "")
+        .trim(),
+    );
     const seenSentences = new Set<string>();
     for (const s of lowerSentences) {
       if (seenSentences.has(s) && s.length > 15) {
@@ -211,7 +253,8 @@ export class LinguisticAnalyzerService {
     }
 
     let firstPersonNarrativeScore = Math.min(100, firstPersonMatches * 30);
-    if (firstPersonMatches >= 2) firstPersonNarrativeScore = Math.min(100, firstPersonNarrativeScore + 30);
+    if (firstPersonMatches >= 2)
+      firstPersonNarrativeScore = Math.min(100, firstPersonNarrativeScore + 30);
 
     // 11. Composite Statistical AI Probability (0-100)
     // Low burstiness + high transitions + humanizer artifacts + zipf deviation + duplicate sentences = AI/Bypass AI
@@ -223,14 +266,16 @@ export class LinguisticAnalyzerService {
     const humanVoiceSignal = firstPersonNarrativeScore;
     const repetitionPenalty = Math.min(60, duplicateSentenceCount * 30);
 
-    let statAi = (burstinessAiSignal * 0.28) + 
-                 (zipfAiSignal * 0.15) + 
-                 (transitionAiSignal * 0.32) + 
-                 (bypassAiSignal * 0.20) + 
-                 (passiveAiPenalty * 0.15) + 
-                 (repetitionPenalty * 0.30) - 
-                 (humanVoiceSignal * 0.55) + 10;
-                 
+    let statAi =
+      burstinessAiSignal * 0.28 +
+      zipfAiSignal * 0.15 +
+      transitionAiSignal * 0.32 +
+      bypassAiSignal * 0.2 +
+      passiveAiPenalty * 0.15 +
+      repetitionPenalty * 0.3 -
+      humanVoiceSignal * 0.55 +
+      10;
+
     statAi = Math.max(2, Math.min(98, Math.round(statAi)));
 
     // Decisive Boundary Anchors:
@@ -239,7 +284,11 @@ export class LinguisticAnalyzerService {
       statAi = Math.min(8, statAi);
     }
     // If text contains 2+ distinct AI cliché transitions or humanizer bypass markers, clamp AI up
-    if ((aiPatternMatches >= 2 && aiTransitionDensity >= 1.0) || humanizerArtifactScore >= 40 || duplicateSentenceCount >= 2) {
+    if (
+      (aiPatternMatches >= 2 && aiTransitionDensity >= 1.0) ||
+      humanizerArtifactScore >= 40 ||
+      duplicateSentenceCount >= 2
+    ) {
       statAi = Math.max(88, statAi);
     }
     if (aiPatternMatches >= 3) {
@@ -287,5 +336,3 @@ export class LinguisticAnalyzerService {
     };
   }
 }
-
-

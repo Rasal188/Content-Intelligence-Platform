@@ -12,4 +12,3 @@ export interface AnalysisExtensions {
   tone?: Record<string, unknown>;
   forensics?: Record<string, unknown>;
 }
-

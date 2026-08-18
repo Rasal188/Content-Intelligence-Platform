@@ -40,13 +40,17 @@ export const MatchedSources: FC<MatchedSourcesProps> = ({ sources }) => {
                   <div className="flex items-center gap-2 text-[11px] text-primary/50 mt-1 pl-6">
                     {src.author && (
                       <span>
-                        Author: <span className="text-primary/70">{src.author}</span>
+                        Author:{" "}
+                        <span className="text-primary/70">{src.author}</span>
                       </span>
                     )}
                     {src.author && src.publication && <span>•</span>}
                     {src.publication && (
                       <span>
-                        Publication: <span className="text-primary/70">{src.publication}</span>
+                        Publication:{" "}
+                        <span className="text-primary/70">
+                          {src.publication}
+                        </span>
                       </span>
                     )}
                   </div>
@@ -62,13 +66,17 @@ export const MatchedSources: FC<MatchedSourcesProps> = ({ sources }) => {
                 <span className="text-[10px] uppercase text-primary/40 font-mono block">
                   Matched Content
                 </span>
-                <p className="font-mono text-primary/80">"{src.matchedSnippet}"</p>
+                <p className="font-mono text-primary/80">
+                  "{src.matchedSnippet}"
+                </p>
               </div>
               <div className="rounded bg-secondary/50 p-2 space-y-1">
                 <span className="text-[10px] uppercase text-primary/40 font-mono block">
                   Source Reference
                 </span>
-                <p className="font-mono text-primary/80">"{src.originalSnippet}"</p>
+                <p className="font-mono text-primary/80">
+                  "{src.originalSnippet}"
+                </p>
               </div>
             </div>
 

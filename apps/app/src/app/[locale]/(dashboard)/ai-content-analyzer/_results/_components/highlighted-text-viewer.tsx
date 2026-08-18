@@ -41,18 +41,25 @@ export const HighlightedTextViewer: FC<HighlightedTextViewerProps> = ({
               "{hl.textSnippet}"
             </p>
             <p className="text-xs text-primary/60">
-              <span className="font-medium text-primary">Diagnostic Reason:</span>{" "}
+              <span className="font-medium text-primary">
+                Diagnostic Reason:
+              </span>{" "}
               {hl.reason}
             </p>
             {hl.severity && (
               <p className="text-xs text-primary/60">
-                <span className="font-medium text-primary">Severity Level:</span>{" "}
-                <span className="capitalize font-mono text-primary/80">{hl.severity}</span>
+                <span className="font-medium text-primary">
+                  Severity Level:
+                </span>{" "}
+                <span className="capitalize font-mono text-primary/80">
+                  {hl.severity}
+                </span>
               </p>
             )}
             {hl.recommendation && (
               <div className="mt-2 rounded bg-amber-500/5 p-2.5 text-xs border border-amber-500/10 text-amber-700 dark:text-amber-400">
-                <span className="font-semibold">Recommended Action:</span> {hl.recommendation}
+                <span className="font-semibold">Recommended Action:</span>{" "}
+                {hl.recommendation}
               </div>
             )}
           </div>

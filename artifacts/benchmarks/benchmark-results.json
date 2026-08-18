@@ -1,0 +1,222 @@
+[
+  {
+    "name": "human_essay_1.txt",
+    "category": "Human Essay",
+    "expectedType": "human",
+    "aiProbability": 0,
+    "originalExpression": 0,
+    "confidence": 10,
+    "plagiarismRisk": 0,
+    "status": "PASSED",
+    "timeMs": 20395
+  },
+  {
+    "name": "human_essay_2.txt",
+    "category": "Human Essay",
+    "expectedType": "human",
+    "aiProbability": 0,
+    "originalExpression": 50,
+    "confidence": 15,
+    "plagiarismRisk": 0,
+    "status": "PASSED",
+    "timeMs": 21999
+  },
+  {
+    "name": "ai_essay_1.txt",
+    "category": "AI Essay",
+    "expectedType": "ai",
+    "aiProbability": 0,
+    "originalExpression": 50,
+    "confidence": 20,
+    "plagiarismRisk": 0,
+    "status": "FAILED",
+    "timeMs": 17105
+  },
+  {
+    "name": "ai_essay_2.txt",
+    "category": "AI Essay",
+    "expectedType": "ai",
+    "aiProbability": 0,
+    "originalExpression": 50,
+    "confidence": 15,
+    "plagiarismRisk": 0,
+    "status": "FAILED",
+    "timeMs": 18804
+  },
+  {
+    "name": "mixed_essay_1.txt",
+    "category": "Mixed Essay",
+    "expectedType": "mixed",
+    "aiProbability": 0,
+    "originalExpression": 50,
+    "confidence": 20,
+    "plagiarismRisk": 0,
+    "status": "FAILED",
+    "timeMs": 21887
+  },
+  {
+    "name": "mixed_essay_2.txt",
+    "category": "Mixed Essay",
+    "expectedType": "mixed",
+    "aiProbability": 0,
+    "originalExpression": 0,
+    "confidence": 15,
+    "plagiarismRisk": 0,
+    "status": "FAILED",
+    "timeMs": 20091
+  },
+  {
+    "name": "academic_paper_1.txt",
+    "category": "Academic Paper",
+    "expectedType": "human",
+    "aiProbability": 0,
+    "originalExpression": 0,
+    "confidence": 95,
+    "plagiarismRisk": 0,
+    "status": "PASSED",
+    "timeMs": 22629
+  },
+  {
+    "name": "academic_paper_2.txt",
+    "category": "Academic Paper",
+    "expectedType": "ai",
+    "aiProbability": 0,
+    "originalExpression": 0,
+    "confidence": 45,
+    "plagiarismRisk": 0,
+    "status": "FAILED",
+    "timeMs": 21365
+  },
+  {
+    "name": "marketing_copy_1.txt",
+    "category": "Marketing Copy",
+    "expectedType": "ai",
+    "aiProbability": 0,
+    "originalExpression": 0,
+    "confidence": 40,
+    "plagiarismRisk": 0,
+    "status": "FAILED",
+    "timeMs": 22300
+  },
+  {
+    "name": "marketing_copy_2.txt",
+    "category": "Marketing Copy",
+    "expectedType": "human",
+    "aiProbability": 0,
+    "originalExpression": 0,
+    "confidence": 40,
+    "plagiarismRisk": 0,
+    "status": "PASSED",
+    "timeMs": 21932
+  },
+  {
+    "name": "technical_writing_1.txt",
+    "category": "Technical Writing",
+    "expectedType": "human",
+    "aiProbability": 0,
+    "originalExpression": 0,
+    "confidence": 95,
+    "plagiarismRisk": 0,
+    "status": "PASSED",
+    "timeMs": 13588
+  },
+  {
+    "name": "technical_writing_2.txt",
+    "category": "Technical Writing",
+    "expectedType": "ai",
+    "aiProbability": 0,
+    "originalExpression": 0,
+    "confidence": 15,
+    "plagiarismRisk": 0,
+    "status": "FAILED",
+    "timeMs": 22292
+  },
+  {
+    "name": "creative_writing_1.txt",
+    "category": "Creative Writing",
+    "expectedType": "human",
+    "aiProbability": 0,
+    "originalExpression": 0,
+    "confidence": 10,
+    "plagiarismRisk": 0,
+    "status": "PASSED",
+    "timeMs": 13621
+  },
+  {
+    "name": "creative_writing_2.txt",
+    "category": "Creative Writing",
+    "expectedType": "ai",
+    "aiProbability": 0,
+    "originalExpression": 0,
+    "confidence": 40,
+    "plagiarismRisk": 0,
+    "status": "FAILED",
+    "timeMs": 19265
+  },
+  {
+    "name": "blog_post_1.txt",
+    "category": "Blog Post",
+    "expectedType": "human",
+    "aiProbability": 0,
+    "originalExpression": 0,
+    "confidence": 15,
+    "plagiarismRisk": 0,
+    "status": "PASSED",
+    "timeMs": 22411
+  },
+  {
+    "name": "blog_post_2.txt",
+    "category": "Blog Post",
+    "expectedType": "ai",
+    "aiProbability": 0,
+    "originalExpression": 0,
+    "confidence": 15,
+    "plagiarismRisk": 0,
+    "status": "FAILED",
+    "timeMs": 24614
+  },
+  {
+    "name": "code_explanation_1.txt",
+    "category": "Code Explanation",
+    "expectedType": "human",
+    "aiProbability": 0,
+    "originalExpression": 0,
+    "confidence": 20,
+    "plagiarismRisk": 0,
+    "status": "PASSED",
+    "timeMs": 12376
+  },
+  {
+    "name": "code_explanation_2.txt",
+    "category": "Code Explanation",
+    "expectedType": "ai",
+    "aiProbability": 0,
+    "originalExpression": 50,
+    "confidence": 40,
+    "plagiarismRisk": 0,
+    "status": "FAILED",
+    "timeMs": 33309
+  },
+  {
+    "name": "paraphrased_content_1.txt",
+    "category": "Paraphrased Content",
+    "expectedType": "mixed",
+    "aiProbability": 0,
+    "originalExpression": 50,
+    "confidence": 25,
+    "plagiarismRisk": 0,
+    "status": "FAILED",
+    "timeMs": 31094
+  },
+  {
+    "name": "paraphrased_content_2.txt",
+    "category": "Paraphrased Content",
+    "expectedType": "ai",
+    "aiProbability": 0,
+    "originalExpression": 100,
+    "confidence": 45,
+    "plagiarismRisk": 0,
+    "status": "FAILED",
+    "timeMs": 32015
+  }
+]

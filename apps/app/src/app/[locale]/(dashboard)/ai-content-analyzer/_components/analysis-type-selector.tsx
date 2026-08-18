@@ -30,7 +30,8 @@ const ANALYSIS_OPTIONS: Array<{
   {
     id: "ai_humanizer",
     title: "AI Humanizer",
-    description: "Rewrite & bypass AI detection with natural phrasing, variable cadence, and authentic human tone.",
+    description:
+      "Rewrite & bypass AI detection with natural phrasing, variable cadence, and authentic human tone.",
     icon: Wand2,
   },
 ];
@@ -45,7 +46,9 @@ export function AnalysisTypeSelector({
 }: AnalysisTypeSelectorProps) {
   return (
     <div className="space-y-3">
-      <h3 className="text-sm font-medium text-primary/60">Select Analysis Mode</h3>
+      <h3 className="text-sm font-medium text-primary/60">
+        Select Analysis Mode
+      </h3>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {ANALYSIS_OPTIONS.map((opt) => {
           const Icon = opt.icon;

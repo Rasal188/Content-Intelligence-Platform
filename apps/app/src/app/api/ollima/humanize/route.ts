@@ -12,25 +12,30 @@ export async function POST(req: Request) {
     if (!text || typeof text !== "string" || text.trim().length === 0) {
       return NextResponse.json(
         { error: "Text payload is required for humanization." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     const apiKey = process.env.OLLIMA_API_KEY;
-    const apiBaseUrl = process.env.OLLIMA_API_BASE_URL || "https://api.ollima.com";
+    const apiBaseUrl =
+      process.env.OLLIMA_API_BASE_URL || "https://api.ollima.com";
     const model = process.env.OLLIMA_HUMANIZER_MODEL || "claude-sonnet-4.6";
     const timeoutVal = process.env.OLLIMA_TIMEOUT
-      ? parseInt(process.env.OLLIMA_TIMEOUT, 10)
+      ? Number.parseInt(process.env.OLLIMA_TIMEOUT, 10)
       : 120000;
 
     if (!apiKey) {
       return NextResponse.json(
-        { error: "Ollima API Key not configured. Please set OLLIMA_API_KEY in .env.local" },
-        { status: 400 }
+        {
+          error:
+            "Ollima API Key not configured. Please set OLLIMA_API_KEY in .env.local",
+        },
+        { status: 400 },
       );
     }
 
-    const { system: systemPrompt, user: userPrompt } = HumanizerPromptBuilder.buildPrompt(text);
+    const { system: systemPrompt, user: userPrompt } =
+      HumanizerPromptBuilder.buildPrompt(text);
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeoutVal);
@@ -63,7 +68,7 @@ export async function POST(req: Request) {
         clearTimeout(timeoutId);
         return NextResponse.json(
           { error: `Ollima API returned status code ${response.status}` },
-          { status: response.status }
+          { status: response.status },
         );
       }
 
@@ -106,8 +111,9 @@ export async function POST(req: Request) {
         };
       }
 
-      let rawHumanized = parsedResult.humanized_text || parsedResult.humanizedText || text;
-      
+      let rawHumanized =
+        parsedResult.humanized_text || parsedResult.humanizedText || text;
+
       // Sanitize raw markdown formatting artifacts (#, ##, **, __, ---) for clean prose
       if (typeof rawHumanized === "string") {
         rawHumanized = rawHumanized
@@ -145,11 +151,20 @@ export async function POST(req: Request) {
     } catch (fetchErr: any) {
       clearTimeout(timeoutId);
       if (fetchErr.name === "AbortError") {
-        return NextResponse.json({ error: "Request timed out during humanization" }, { status: 504 });
+        return NextResponse.json(
+          { error: "Request timed out during humanization" },
+          { status: 504 },
+        );
       }
-      return NextResponse.json({ error: fetchErr.message || "Failed to call AI humanizer" }, { status: 500 });
+      return NextResponse.json(
+        { error: fetchErr.message || "Failed to call AI humanizer" },
+        { status: 500 },
+      );
     }
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || "Unexpected server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: error.message || "Unexpected server error" },
+      { status: 500 },
+    );
   }
 }

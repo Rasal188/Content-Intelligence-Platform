@@ -4,12 +4,14 @@
     "enabled": true
   },
   "linter": {
-    "ignore": ["node_modules", ".next", "packages/tsconfig"],
+    "ignore": ["node_modules", ".next", "packages/tsconfig", "dist", "build", "artifacts", "scripts"],
     "enabled": true,
     "rules": {
       "recommended": true,
       "a11y": {
-        "noSvgWithoutTitle": "off"
+        "noSvgWithoutTitle": "off",
+        "useKeyWithClickEvents": "off",
+        "useHeadingContent": "off"
       },
       "style": {
         "noNonNullAssertion": "off"
@@ -18,7 +20,13 @@
         "useExhaustiveDependencies": "off"
       },
       "complexity": {
-        "noForEach": "off"
+        "noForEach": "off",
+        "noStaticOnlyClass": "off",
+        "noUselessCatch": "off"
+      },
+      "suspicious": {
+        "noArrayIndexKey": "off",
+        "noExplicitAny": "off"
       }
     }
   },

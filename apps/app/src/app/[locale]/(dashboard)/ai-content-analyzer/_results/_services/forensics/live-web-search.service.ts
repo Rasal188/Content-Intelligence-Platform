@@ -11,7 +11,9 @@ export class LiveWebSearchService {
   /**
    * Searches public web sources for exact/similar passages and extracts authentic web content.
    */
-  public static async verifySources(textContent: string): Promise<MatchedSource[]> {
+  public static async verifySources(
+    textContent: string,
+  ): Promise<MatchedSource[]> {
     if (!textContent || textContent.trim().length === 0) {
       return [];
     }
@@ -19,11 +21,15 @@ export class LiveWebSearchService {
     const text = textContent.trim();
     const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
     const firstSentence = (sentences[0] || text).trim();
-    
+
     // Extract key search phrase (5-8 distinctive words)
-    const words = firstSentence.replace(/[^a-zA-Z0-9 ]/g, " ").trim().split(/\s+/).filter(w => w.length > 2);
+    const words = firstSentence
+      .replace(/[^a-zA-Z0-9 ]/g, " ")
+      .trim()
+      .split(/\s+/)
+      .filter((w) => w.length > 2);
     const searchQuery = words.slice(0, 7).join(" ");
-    
+
     const results: MatchedSource[] = [];
 
     try {
@@ -79,12 +85,15 @@ export class LiveWebSearchService {
           if (ddgData.AbstractText && ddgData.AbstractURL) {
             results.push({
               id: "source-ddg-live",
-              sourceTitle: ddgData.Heading ? `${ddgData.Heading} — Web Knowledge Record` : "Verified Web Reference",
+              sourceTitle: ddgData.Heading
+                ? `${ddgData.Heading} — Web Knowledge Record`
+                : "Verified Web Reference",
               sourceUrl: ddgData.AbstractURL,
               similarityPercent: 100,
               matchedSnippet: firstSentence,
               originalSnippet: ddgData.AbstractText,
-              publication: ddgData.AbstractSource || "Global Digital Publication",
+              publication:
+                ddgData.AbstractSource || "Global Digital Publication",
               author: "Verified Web Publisher",
             });
           }
@@ -98,7 +107,7 @@ export class LiveWebSearchService {
     if (results.length === 0) {
       const cleanWords = words.slice(0, 6).join(" ");
       const queryParam = encodeURIComponent(`"${cleanWords}"`);
-      
+
       results.push({
         id: "source-web-live-record",
         sourceTitle: `Web & Public Domain Record: "${cleanWords}..."`,

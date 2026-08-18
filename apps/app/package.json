@@ -9,6 +9,7 @@
     "lint": "biome lint",
     "format": "biome format --write .",
     "start": "next start",
+    "test": "bun test",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

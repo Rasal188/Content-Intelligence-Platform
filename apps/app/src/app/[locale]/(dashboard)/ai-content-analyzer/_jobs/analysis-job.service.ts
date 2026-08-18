@@ -1,8 +1,8 @@
+import { getResultBuilderService } from "../_results/_services/result-builder.service";
 import type { AnalysisRequest } from "../_types/analysis";
+import { DocumentExtractionAdapter } from "../_utils/document-extraction.adapter";
 import { formatFileSize } from "../_utils/file-utils";
 import { getTextMetrics } from "../_utils/validators";
-import { DocumentExtractionAdapter } from "../_utils/document-extraction.adapter";
-import { getResultBuilderService } from "../_results/_services/result-builder.service";
 import { AnalysisJobHistory } from "./analysis-job.history";
 import { AnalysisJobMachine } from "./analysis-job.machine";
 import { AnalysisJobQueue } from "./analysis-job.queue";
@@ -157,7 +157,12 @@ export class AnalysisJobService {
       this.activeJob.status = "cancelled";
       this.activeJob.currentStage = "Cancelled by user";
       this.activeJob.finishedAt = new Date().toISOString();
-      this.addLog(this.activeJob, "Cancelled", "Job execution cancelled by user", "warning");
+      this.addLog(
+        this.activeJob,
+        "Cancelled",
+        "Job execution cancelled by user",
+        "warning",
+      );
       this.history.addOrUpdateJob(this.activeJob);
       this.activeJob = null;
       this.queue.setActiveJobId(null);
@@ -171,7 +176,12 @@ export class AnalysisJobService {
       removed.status = "cancelled";
       removed.currentStage = "Cancelled in queue";
       removed.finishedAt = new Date().toISOString();
-      this.addLog(removed, "Cancelled", "Queued job cancelled by user", "warning");
+      this.addLog(
+        removed,
+        "Cancelled",
+        "Queued job cancelled by user",
+        "warning",
+      );
       this.history.addOrUpdateJob(removed);
       this.notify();
     }
@@ -252,7 +262,9 @@ export class AnalysisJobService {
             if (req.source === "paste" && req.text) {
               nextJob.textContent = req.text;
             } else if (req.source === "file" && req.file) {
-              nextJob.textContent = await DocumentExtractionAdapter.extractText(req.file);
+              nextJob.textContent = await DocumentExtractionAdapter.extractText(
+                req.file,
+              );
             }
           } catch (extractErr) {
             throw extractErr;
@@ -271,8 +283,9 @@ export class AnalysisJobService {
         nextJob.elapsedTime = Math.round((Date.now() - startTime) / 1000);
         nextJob.estimatedRemaining = 0;
 
-        const text = nextJob.textContent || this.extractText(nextJob.originalRequest);
-        
+        const text =
+          nextJob.textContent || this.extractText(nextJob.originalRequest);
+
         if (nextJob.analysisType === "ai_humanizer") {
           try {
             const humanizeRes = await fetch("/api/ollima/humanize", {
@@ -296,7 +309,9 @@ export class AnalysisJobService {
                 readabilityScore: 92,
                 wordCount: metrics.wordCount,
                 characterCount: metrics.characterCount,
-                summary: humanizeData.summary || "AI content successfully rewritten with high natural burstiness and zero AI markers.",
+                summary:
+                  humanizeData.summary ||
+                  "AI content successfully rewritten with high natural burstiness and zero AI markers.",
                 completedAt: nextJob.finishedAt,
                 humanizedText: nextJob.humanizedText,
                 originalText: text,
@@ -307,7 +322,10 @@ export class AnalysisJobService {
               throw new Error("Failed to humanize content via Ollima gateway.");
             }
           } catch (humErr) {
-            console.warn("Humanizer call failed, applying deterministic humanizer transformation:", humErr);
+            console.warn(
+              "Humanizer call failed, applying deterministic humanizer transformation:",
+              humErr,
+            );
             // Fallback transformation
             nextJob.humanizedText = text
               .replace(/\bIn today's fast-paced digital world,?\s*/gi, "")
@@ -341,9 +359,9 @@ export class AnalysisJobService {
               nextJob.id,
               nextJob.documentName,
               text,
-              nextJob.analysisType
+              nextJob.analysisType,
             );
-            
+
             nextJob.result = {
               jobId: nextJob.id,
               overallScore: domainResult.scores.overallOriginality.value,
@@ -352,13 +370,21 @@ export class AnalysisJobService {
               readabilityScore: domainResult.scores.readabilityQuality.value,
               wordCount: domainResult.document.wordCount,
               characterCount: domainResult.document.characterCount,
-              summary: ((domainResult.extensions.writingStyle as any)?.qualityReport)?.executiveSummary || "Analysis complete. Content verified against AI pattern indexes.",
+              summary:
+                (domainResult.extensions.writingStyle as any)?.qualityReport
+                  ?.executiveSummary ||
+                "Analysis complete. Content verified against AI pattern indexes.",
               completedAt: nextJob.finishedAt,
             };
           } catch (builderErr) {
-            const isDevMock = process.env.NODE_ENV === "development" && process.env.MOCK_ANALYSIS === "true";
+            const isDevMock =
+              process.env.NODE_ENV === "development" &&
+              process.env.MOCK_ANALYSIS === "true";
             if (isDevMock) {
-              console.warn("Failed to generate real AI result during job execution, falling back to mock values:", builderErr);
+              console.warn(
+                "Failed to generate real AI result during job execution, falling back to mock values:",
+                builderErr,
+              );
               const metrics = getTextMetrics(text);
               nextJob.result = {
                 jobId: nextJob.id,
@@ -368,7 +394,8 @@ export class AnalysisJobService {
                 readabilityScore: 95,
                 wordCount: metrics.wordCount || 850,
                 characterCount: metrics.characterCount || 5200,
-                summary: "Analysis complete (Mock Fallback). Content verified against web sources.",
+                summary:
+                  "Analysis complete (Mock Fallback). Content verified against web sources.",
                 completedAt: nextJob.finishedAt,
               };
             } else {
@@ -377,7 +404,12 @@ export class AnalysisJobService {
           }
         }
 
-        this.addLog(nextJob, "Completed", "Job execution finished successfully", "success");
+        this.addLog(
+          nextJob,
+          "Completed",
+          "Job execution finished successfully",
+          "success",
+        );
         this.history.addOrUpdateJob(nextJob);
         this.activeJob = null;
         this.queue.setActiveJobId(null);
@@ -386,7 +418,8 @@ export class AnalysisJobService {
     } catch (err) {
       if (this.activeJob && this.activeJob.id === nextJob.id) {
         nextJob.status = "failed";
-        nextJob.error = err instanceof Error ? err.message : "Job execution failed";
+        nextJob.error =
+          err instanceof Error ? err.message : "Job execution failed";
         nextJob.finishedAt = new Date().toISOString();
         this.addLog(nextJob, "Failed", nextJob.error, "error");
         this.history.addOrUpdateJob(nextJob);
@@ -403,7 +436,12 @@ export class AnalysisJobService {
     }
   }
 
-  private addLog(job: AnalysisJobItem, stage: string, message: string, level: JobLogItem["level"]): void {
+  private addLog(
+    job: AnalysisJobItem,
+    stage: string,
+    message: string,
+    level: JobLogItem["level"],
+  ): void {
     const log: JobLogItem = {
       id: `log-${Date.now()}-${Math.random().toString().slice(2, 6)}`,
       timestamp: new Date().toISOString(),
@@ -422,7 +460,8 @@ export class AnalysisJobService {
   private extractText(request?: AnalysisRequest): string {
     if (!request) return "";
     if (request.source === "paste" && request.text) return request.text;
-    if (request.file) return `File content from ${request.file.name} (${formatFileSize(request.file.size)})`;
+    if (request.file)
+      return `File content from ${request.file.name} (${formatFileSize(request.file.size)})`;
     return "";
   }
 }

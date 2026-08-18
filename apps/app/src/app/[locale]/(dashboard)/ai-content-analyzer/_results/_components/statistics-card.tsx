@@ -53,20 +53,26 @@ export const StatisticsCard: FC<StatisticsCardProps> = ({ statistics }) => {
         <div>
           <span className="text-primary/40 block">Vocab Diversity</span>
           <span className="font-mono text-base font-semibold text-primary">
-            {statistics.words === 0 ? "--" : `${statistics.vocabularyDiversityPercent}%`}
+            {statistics.words === 0
+              ? "--"
+              : `${statistics.vocabularyDiversityPercent}%`}
           </span>
         </div>
         <div>
           <span className="text-primary/40 block">Avg Sentence Length</span>
           <span className="font-mono text-base font-semibold text-primary">
-            {statistics.words === 0 ? "--" : `${statistics.averageSentenceLengthWords} words`}
+            {statistics.words === 0
+              ? "--"
+              : `${statistics.averageSentenceLengthWords} words`}
           </span>
         </div>
         {showReadability && (
           <div>
             <span className="text-primary/40 block">Readability Score</span>
             <span className="font-mono text-base font-semibold text-primary">
-              {statistics.readabilityScore === -1 ? "--" : statistics.readabilityScore}
+              {statistics.readabilityScore === -1
+                ? "--"
+                : statistics.readabilityScore}
             </span>
           </div>
         )}

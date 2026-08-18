@@ -1,5 +1,8 @@
 import type { AnalysisExtensions } from "./analysis-extension.types";
-import type { AnalysisHighlight, HighlightRiskLevel } from "./analysis-highlight.types";
+import type {
+  AnalysisHighlight,
+  HighlightRiskLevel,
+} from "./analysis-highlight.types";
 import type { AnalysisMetadata } from "./analysis-metadata.types";
 import type { AnalysisRecommendation } from "./analysis-recommendation.types";
 import type { AnalysisScores } from "./analysis-score.types";

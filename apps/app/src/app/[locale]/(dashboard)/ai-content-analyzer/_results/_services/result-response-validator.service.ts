@@ -1,14 +1,14 @@
+import type { HighlightRiskLevel } from "../_types/analysis-highlight.types";
 import type { AnalysisResultDomain } from "../_types/analysis-result.types";
 import type { MatchedSource } from "../_types/analysis-source.types";
-import type { HighlightRiskLevel } from "../_types/analysis-highlight.types";
 import type { AnalysisWarning } from "../_types/analysis-warning.types";
-import { ScoreEngine } from "./forensics/score-engine";
 import { ConfidenceCalculator } from "./forensics/confidence-calculator";
-import { RiskLevelCalculator } from "./forensics/risk-level-calculator";
+import { DeterministicMatcher } from "./forensics/deterministic-matcher";
 import { EvidenceCollector } from "./forensics/evidence-collector";
+import { RiskLevelCalculator } from "./forensics/risk-level-calculator";
+import { ScoreEngine } from "./forensics/score-engine";
 import { SummaryGenerator } from "./forensics/summary-generator";
 import { WebPlagiarismMatcher } from "./forensics/web-plagiarism-matcher.service";
-import { DeterministicMatcher } from "./forensics/deterministic-matcher";
 import { PROMPT_VERSION } from "./prompt-config";
 
 /**
@@ -43,7 +43,8 @@ export class ResultResponseValidator {
     const data = raw as Record<string, any>;
 
     // Handle v1 schema compatibility (if the LLM responds with v1 or cached result is v1)
-    const isV1 = typeof data.aiScore === "number" && typeof data.overallScore === "number";
+    const isV1 =
+      typeof data.aiScore === "number" && typeof data.overallScore === "number";
 
     const aiForensics = data.aiForensics || {};
     const originalExpression = data.originalExpression || {};
@@ -60,25 +61,61 @@ export class ResultResponseValidator {
       }
     };
     fillDefaults(aiForensics, [
-      "sentenceBurstiness","sentencePredictability","lexicalRepetition","vocabularyDiversity",
-      "transitionOveruse","paragraphRhythm","sentenceStructureRepetition","templateLanguage",
-      "genericWording","confidenceInflation","informationDensity","hedgingLanguage",
-      "stylisticConsistency","narrativeAuthenticity","personalExperience","emotionalAuthenticity",
-      "creativity","humanImperfections","contextSwitching","hallucinationIndicators"
+      "sentenceBurstiness",
+      "sentencePredictability",
+      "lexicalRepetition",
+      "vocabularyDiversity",
+      "transitionOveruse",
+      "paragraphRhythm",
+      "sentenceStructureRepetition",
+      "templateLanguage",
+      "genericWording",
+      "confidenceInflation",
+      "informationDensity",
+      "hedgingLanguage",
+      "stylisticConsistency",
+      "narrativeAuthenticity",
+      "personalExperience",
+      "emotionalAuthenticity",
+      "creativity",
+      "humanImperfections",
+      "contextSwitching",
+      "hallucinationIndicators",
     ]);
     fillDefaults(originalExpression, [
-      "specificity","uniqueWording","lexicalDiversity","concreteObservations","originalExamples",
-      "boilerplate","marketingLanguage","educationalFiller","commonCliches","genericExplanations"
+      "specificity",
+      "uniqueWording",
+      "lexicalDiversity",
+      "concreteObservations",
+      "originalExamples",
+      "boilerplate",
+      "marketingLanguage",
+      "educationalFiller",
+      "commonCliches",
+      "genericExplanations",
     ]);
     fillDefaults(similarityAnalysis, [
-      "repeatedWording","repeatedPhrases","repeatedParagraphs","repeatedExplanations",
-      "templateReuse","formattingInconsistencies","abruptStyleShifts","repeatedUncommonTerminology"
+      "repeatedWording",
+      "repeatedPhrases",
+      "repeatedParagraphs",
+      "repeatedExplanations",
+      "templateReuse",
+      "formattingInconsistencies",
+      "abruptStyleShifts",
+      "repeatedUncommonTerminology",
     ]);
     fillDefaults(writingQuality, [
-      "grammar","readability","flow","organization","vocabulary",
-      "tone","paragraphQuality","sentenceVariety","argumentQuality","evidenceUsage"
+      "grammar",
+      "readability",
+      "flow",
+      "organization",
+      "vocabulary",
+      "tone",
+      "paragraphQuality",
+      "sentenceVariety",
+      "argumentQuality",
+      "evidenceUsage",
     ]);
-
 
     let aiScore = 0;
     let humanScore = 0;
@@ -88,19 +125,30 @@ export class ResultResponseValidator {
     let readability = 80;
     let overallScore = 50;
     let confidence = 90;
-    let confidenceBreakdown: import("./forensics/confidence-calculator").MetricConfidenceBreakdown | null = null;
+    let confidenceBreakdown:
+      | import("./forensics/confidence-calculator").MetricConfidenceBreakdown
+      | null = null;
     let riskLevel: HighlightRiskLevel = "low";
 
     if (isV1) {
-      aiScore = this.clamp(data.aiScore);
+      aiScore = ResultResponseValidator.clamp(data.aiScore);
       humanScore = Math.max(0, 100 - aiScore);
       mixedScore = 0;
-      originalityScore = typeof data.originalityScore === "number" ? this.clamp(data.originalityScore) : 50;
-      plagiarismScore = this.clamp(data.plagiarismScore);
-      readability = typeof data.readability === "number" ? this.clamp(data.readability) : 80;
-      overallScore = this.clamp(data.overallScore);
-      confidence = typeof data.confidence === "number" ? this.clamp(data.confidence) : 90;
-      riskLevel = this.parseRiskLevel(data.riskLevel);
+      originalityScore =
+        typeof data.originalityScore === "number"
+          ? ResultResponseValidator.clamp(data.originalityScore)
+          : 50;
+      plagiarismScore = ResultResponseValidator.clamp(data.plagiarismScore);
+      readability =
+        typeof data.readability === "number"
+          ? ResultResponseValidator.clamp(data.readability)
+          : 80;
+      overallScore = ResultResponseValidator.clamp(data.overallScore);
+      confidence =
+        typeof data.confidence === "number"
+          ? ResultResponseValidator.clamp(data.confidence)
+          : 90;
+      riskLevel = ResultResponseValidator.parseRiskLevel(data.riskLevel);
     } else {
       // V2 hybrid forensic calculations (statistical linguistic metrics + LLM semantic indicators)
       const calculated = ScoreEngine.calculate(data, textContent);
@@ -137,24 +185,42 @@ export class ResultResponseValidator {
         riskLevel: RiskLevelCalculator.calculate(item.confidence),
         reason: item.reason,
         severity: item.severity,
-        recommendation: item.severity === "critical" || item.severity === "high" ? "Rewrite using active, conversational phrasing and dynamic sentence length." : undefined,
+        recommendation:
+          item.severity === "critical" || item.severity === "high"
+            ? "Rewrite using active, conversational phrasing and dynamic sentence length."
+            : undefined,
       };
     });
 
     // If text is provided and evidenceList is sparse, extract sentences matching forensic patterns
-    if (highlights.length === 0 && textContent && textContent.trim().length > 0) {
-      const sentenceMatches = textContent.match(/[^.!?]+[.!?]+(\s+|$)|[^.!?]+$/g) || [];
+    if (
+      highlights.length === 0 &&
+      textContent &&
+      textContent.trim().length > 0
+    ) {
+      const sentenceMatches =
+        textContent.match(/[^.!?]+[.!?]+(\s+|$)|[^.!?]+$/g) || [];
       const extracted: typeof highlights = [];
-      
+
       sentenceMatches.forEach((s, idx) => {
         const trimmed = s.trim();
         if (trimmed.length < 15) return;
-        
+
         const words = trimmed.split(/\s+/).filter(Boolean);
-        const hasAiPattern = /furthermore|moreover|in conclusion|plays a (crucial|pivotal|vital|key) role|in today's|not only|testament|delve|paramount|innovative|transform/i.test(trimmed);
-        const hasRepetition = /built to help you|empower your business|elevate your growth/i.test(trimmed);
-        
-        if (hasAiPattern || hasRepetition || (words.length > 22 && aiScore > 50)) {
+        const hasAiPattern =
+          /furthermore|moreover|in conclusion|plays a (crucial|pivotal|vital|key) role|in today's|not only|testament|delve|paramount|innovative|transform/i.test(
+            trimmed,
+          );
+        const hasRepetition =
+          /built to help you|empower your business|elevate your growth/i.test(
+            trimmed,
+          );
+
+        if (
+          hasAiPattern ||
+          hasRepetition ||
+          (words.length > 22 && aiScore > 50)
+        ) {
           extracted.push({
             id: `hl-gen-${idx}`,
             startIndex: textContent.indexOf(trimmed),
@@ -162,29 +228,37 @@ export class ResultResponseValidator {
             textSnippet: trimmed,
             probability: hasAiPattern ? 92 : hasRepetition ? 88 : 74,
             riskLevel: hasAiPattern || hasRepetition ? "high" : "medium",
-            reason: hasAiPattern 
+            reason: hasAiPattern
               ? "Formulaic AI transitional phraseology and structural predictability."
               : hasRepetition
                 ? "Repetitive sentence structure with low lexical variation."
                 : "High clause density and uniform cadence characteristic of synthetic LLM generation.",
             severity: hasAiPattern ? "high" : "medium",
-            recommendation: "Introduce human burstiness: vary the sentence length or simplify compound clauses.",
+            recommendation:
+              "Introduce human burstiness: vary the sentence length or simplify compound clauses.",
           });
         }
       });
-      
+
       if (extracted.length > 0) {
         highlights = extracted.slice(0, 6);
       }
     }
 
     // Real Web & Digital Repository Plagiarism Matches (Grounded against live web knowledge index and dynamic search)
-    const rawCandidates = WebPlagiarismMatcher.match(textContent, plagiarismScore, dynamicCandidates);
-    
+    const rawCandidates = WebPlagiarismMatcher.match(
+      textContent,
+      plagiarismScore,
+      dynamicCandidates,
+    );
+
     // Deterministic Text Matching & N-Gram Verification (TypeScript Engine is the single source of truth)
-    const deterministicReport = DeterministicMatcher.evaluate(textContent, rawCandidates);
+    const deterministicReport = DeterministicMatcher.evaluate(
+      textContent,
+      rawCandidates,
+    );
     const matchedSources = deterministicReport.verifiedSources;
-    
+
     if (deterministicReport.verifiedSources.length > 0) {
       plagiarismScore = deterministicReport.literalSimilarityPercent;
       originalityScore = Math.max(1, 100 - plagiarismScore);
@@ -195,7 +269,9 @@ export class ResultResponseValidator {
     }
 
     // Map recommendations
-    const rawRecs = Array.isArray(data.recommendations) ? data.recommendations : [];
+    const rawRecs = Array.isArray(data.recommendations)
+      ? data.recommendations
+      : [];
     const recommendations = rawRecs.map((item: unknown, idx: number) => {
       if (typeof item === "string") {
         return {
@@ -207,28 +283,45 @@ export class ResultResponseValidator {
           status: "pending" as const,
         };
       }
-      const rec = (item && typeof item === "object" ? item : {}) as Record<string, unknown>;
+      const rec = (item && typeof item === "object" ? item : {}) as Record<
+        string,
+        unknown
+      >;
       return {
         id: typeof rec.id === "string" ? rec.id : `rec-${idx}`,
-        category: this.parseCategory(rec.category),
-        title: typeof rec.title === "string" ? rec.title : "Enhance original expression",
-        description: typeof rec.description === "string" ? rec.description : "Vary linguistic style and sentence flow.",
-        priority: this.parsePriority(rec.priority),
-        status: this.parseStatus(rec.status),
+        category: ResultResponseValidator.parseCategory(rec.category),
+        title:
+          typeof rec.title === "string"
+            ? rec.title
+            : "Enhance original expression",
+        description:
+          typeof rec.description === "string"
+            ? rec.description
+            : "Vary linguistic style and sentence flow.",
+        priority: ResultResponseValidator.parsePriority(rec.priority),
+        status: ResultResponseValidator.parseStatus(rec.status),
       };
     });
 
     // Map warnings
     const rawWarnings = Array.isArray(data.warnings) ? data.warnings : [];
-    const warnings: AnalysisWarning[] = rawWarnings.map((item: unknown, idx: number) => {
-      const warn = (item && typeof item === "object" ? item : {}) as Record<string, unknown>;
-      return {
-        id: typeof warn.id === "string" ? warn.id : `warn-${idx}`,
-        code: typeof warn.code === "string" ? warn.code : "OLLIMA_WARN",
-        message: typeof warn.message === "string" ? warn.message : "General advisory recommendation.",
-        severity: this.parseSeverity(warn.severity),
-      };
-    });
+    const warnings: AnalysisWarning[] = rawWarnings.map(
+      (item: unknown, idx: number) => {
+        const warn = (item && typeof item === "object" ? item : {}) as Record<
+          string,
+          unknown
+        >;
+        return {
+          id: typeof warn.id === "string" ? warn.id : `warn-${idx}`,
+          code: typeof warn.code === "string" ? warn.code : "OLLIMA_WARN",
+          message:
+            typeof warn.message === "string"
+              ? warn.message
+              : "General advisory recommendation.",
+          severity: ResultResponseValidator.parseSeverity(warn.severity),
+        };
+      },
+    );
 
     // Summary generator
     const generatedSummary = SummaryGenerator.generate(
@@ -237,7 +330,7 @@ export class ResultResponseValidator {
       originalityScore,
       plagiarismScore,
       readability,
-      confidence
+      confidence,
     );
 
     // Map Quality Report
@@ -249,27 +342,52 @@ export class ResultResponseValidator {
 
     const qualityReport = {
       executiveSummary: generatedSummary.executiveSummary,
-      writingStyleAnalysis: pickText(writingQuality.flow, "observations", "reason")
-        ?? (isV1 ? data.writingStyleAnalysis : "Evaluated flow transition pacing."),
-      aiDetectionReasoning: pickText(aiForensics.templateLanguage, "reasoning", "reason")
-        ?? (isV1 ? data.aiDetectionReasoning : "Evaluated structural predictability indicators."),
-      originalityAssessment: pickText(originalExpression.specificity, "reasoning", "reason")
-        ?? (isV1 ? data.originalityAssessment : "Evaluated specificity of unique wording."),
-      readabilityAssessment: pickText(writingQuality.readability, "explanation", "reason")
-        ?? (isV1 ? data.readabilityAssessment : "Evaluated grammar and readability metrics."),
-      grammarAssessment: pickText(writingQuality.grammar, "explanation", "reason")
-        ?? (isV1 ? data.grammarAssessment : "Evaluated punctuation and mechanical flow."),
-      structureAssessment: pickText(writingQuality.organization, "explanation", "reason")
-        ?? (isV1 ? data.structureAssessment : "Evaluated paragraph and argument organization."),
-      vocabularyAnalysis: pickText(writingQuality.vocabulary, "explanation", "reason")
-        ?? (isV1 ? data.vocabularyAnalysis : "Evaluated lexical variety and synonyms."),
+      writingStyleAnalysis:
+        pickText(writingQuality.flow, "observations", "reason") ??
+        (isV1
+          ? data.writingStyleAnalysis
+          : "Evaluated flow transition pacing."),
+      aiDetectionReasoning:
+        pickText(aiForensics.templateLanguage, "reasoning", "reason") ??
+        (isV1
+          ? data.aiDetectionReasoning
+          : "Evaluated structural predictability indicators."),
+      originalityAssessment:
+        pickText(originalExpression.specificity, "reasoning", "reason") ??
+        (isV1
+          ? data.originalityAssessment
+          : "Evaluated specificity of unique wording."),
+      readabilityAssessment:
+        pickText(writingQuality.readability, "explanation", "reason") ??
+        (isV1
+          ? data.readabilityAssessment
+          : "Evaluated grammar and readability metrics."),
+      grammarAssessment:
+        pickText(writingQuality.grammar, "explanation", "reason") ??
+        (isV1
+          ? data.grammarAssessment
+          : "Evaluated punctuation and mechanical flow."),
+      structureAssessment:
+        pickText(writingQuality.organization, "explanation", "reason") ??
+        (isV1
+          ? data.structureAssessment
+          : "Evaluated paragraph and argument organization."),
+      vocabularyAnalysis:
+        pickText(writingQuality.vocabulary, "explanation", "reason") ??
+        (isV1
+          ? data.vocabularyAnalysis
+          : "Evaluated lexical variety and synonyms."),
       strengths: generatedSummary.strengths,
       weaknesses: generatedSummary.weaknesses,
       recommendedImprovements: generatedSummary.recommendations,
-      riskExplanation: pickText(aiForensics.confidenceInflation, "reasoning", "reason")
-        ?? (isV1 ? data.riskExplanation : "Confidence and risk derived from indicators agreement."),
-      confidenceExplanation: pickText(aiForensics.stylisticConsistency, "reasoning", "reason")
-        ?? (isV1 ? data.confidenceExplanation : "Linguistic consistency audited."),
+      riskExplanation:
+        pickText(aiForensics.confidenceInflation, "reasoning", "reason") ??
+        (isV1
+          ? data.riskExplanation
+          : "Confidence and risk derived from indicators agreement."),
+      confidenceExplanation:
+        pickText(aiForensics.stylisticConsistency, "reasoning", "reason") ??
+        (isV1 ? data.confidenceExplanation : "Linguistic consistency audited."),
     };
 
     const metadata = {
@@ -324,7 +442,8 @@ export class ResultResponseValidator {
           value: originalityScore,
           confidence: confidenceBreakdown?.originality ?? confidence,
           weight: 1.0,
-          description: "Expression originality based on unique wording and specificity.",
+          description:
+            "Expression originality based on unique wording and specificity.",
         },
         aiProbability: {
           id: "score-ai",
@@ -340,7 +459,8 @@ export class ResultResponseValidator {
           value: mixedScore,
           confidence: confidence,
           weight: 1.0,
-          description: "Chance this text contains blended human and AI content.",
+          description:
+            "Chance this text contains blended human and AI content.",
         },
         plagiarismSimilarity: {
           id: "score-plag",
@@ -348,7 +468,8 @@ export class ResultResponseValidator {
           value: plagiarismScore,
           confidence: confidenceBreakdown?.similarity ?? confidence,
           weight: 0.8,
-          description: "Estimated similarity risk from linguistic and structural analysis.",
+          description:
+            "Estimated similarity risk from linguistic and structural analysis.",
         },
         readabilityQuality: {
           id: "score-read",
@@ -362,12 +483,33 @@ export class ResultResponseValidator {
       statistics: {
         characters: charCount,
         words: wordCount,
-        paragraphs: Math.max(1, textContent.split(/\n+/).filter(p => p.trim().length > 0).length),
-        sentences: Math.max(1, textContent.split(/[.!?]+/).filter(s => s.trim().length > 0).length),
+        paragraphs: Math.max(
+          1,
+          textContent.split(/\n+/).filter((p) => p.trim().length > 0).length,
+        ),
+        sentences: Math.max(
+          1,
+          textContent.split(/[.!?]+/).filter((s) => s.trim().length > 0).length,
+        ),
         readabilityScore: readability,
         estimatedReadingTimeMinutes: Math.max(1, Math.ceil(wordCount / 200)),
-        vocabularyDiversityPercent: wordCount > 0 ? Math.round((new Set(words.map(w => w.toLowerCase())).size / wordCount) * 100) : 0,
-        averageSentenceLengthWords: parseFloat((wordCount / Math.max(1, textContent.split(/[.!?]+/).filter(s => s.trim().length > 0).length)).toFixed(1)),
+        vocabularyDiversityPercent:
+          wordCount > 0
+            ? Math.round(
+                (new Set(words.map((w) => w.toLowerCase())).size / wordCount) *
+                  100,
+              )
+            : 0,
+        averageSentenceLengthWords: Number.parseFloat(
+          (
+            wordCount /
+            Math.max(
+              1,
+              textContent.split(/[.!?]+/).filter((s) => s.trim().length > 0)
+                .length,
+            )
+          ).toFixed(1),
+        ),
         language: "English",
       },
       metadata,
@@ -393,14 +535,26 @@ export class ResultResponseValidator {
   }
 
   private static parseRiskLevel(val: unknown): HighlightRiskLevel {
-    if (val === "critical" || val === "high" || val === "medium" || val === "low") {
+    if (
+      val === "critical" ||
+      val === "high" ||
+      val === "medium" ||
+      val === "low"
+    ) {
       return val;
     }
     return "low";
   }
 
-  private static parseCategory(val: unknown): "citation" | "formatting" | "paraphrase" | "quality" {
-    if (val === "citation" || val === "formatting" || val === "paraphrase" || val === "quality") {
+  private static parseCategory(
+    val: unknown,
+  ): "citation" | "formatting" | "paraphrase" | "quality" {
+    if (
+      val === "citation" ||
+      val === "formatting" ||
+      val === "paraphrase" ||
+      val === "quality"
+    ) {
       return val;
     }
     return "quality";
@@ -413,7 +567,9 @@ export class ResultResponseValidator {
     return "low";
   }
 
-  private static parseStatus(val: unknown): "pending" | "applied" | "dismissed" {
+  private static parseStatus(
+    val: unknown,
+  ): "pending" | "applied" | "dismissed" {
     if (val === "pending" || val === "applied" || val === "dismissed") {
       return val;
     }

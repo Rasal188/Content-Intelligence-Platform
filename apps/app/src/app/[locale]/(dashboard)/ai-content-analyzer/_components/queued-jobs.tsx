@@ -19,7 +19,8 @@ export const QueuedJobs: FC<QueuedJobsProps> = ({ jobs, onCancel }) => {
     <div className="space-y-2">
       <div className="flex items-center justify-between text-xs font-medium text-primary/60">
         <span className="flex items-center gap-1.5">
-          <Clock className="h-3.5 w-3.5" /> Queued Execution Queue ({jobs.length})
+          <Clock className="h-3.5 w-3.5" /> Queued Execution Queue (
+          {jobs.length})
         </span>
         <span>FIFO Queue</span>
       </div>

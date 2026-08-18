@@ -112,14 +112,17 @@ export class MockAnalysisProvider implements IAnalysisProvider {
     const textContent = this.extractTextContent(request);
     const metrics = getTextMetrics(textContent);
 
-    const stages: Array<{ stage: LoadingStage; percent: number; delay: number }> =
-      [
-        { stage: "uploading", percent: 20, delay: 600 },
-        { stage: "extracting_text", percent: 40, delay: 600 },
-        { stage: "preparing_analysis", percent: 60, delay: 600 },
-        { stage: "running_detection", percent: 85, delay: 800 },
-        { stage: "generating_report", percent: 100, delay: 500 },
-      ];
+    const stages: Array<{
+      stage: LoadingStage;
+      percent: number;
+      delay: number;
+    }> = [
+      { stage: "uploading", percent: 20, delay: 600 },
+      { stage: "extracting_text", percent: 40, delay: 600 },
+      { stage: "preparing_analysis", percent: 60, delay: 600 },
+      { stage: "running_detection", percent: 85, delay: 800 },
+      { stage: "generating_report", percent: 100, delay: 500 },
+    ];
 
     for (const step of stages) {
       if (onProgress) {

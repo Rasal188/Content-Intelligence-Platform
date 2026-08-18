@@ -1,6 +1,6 @@
-import { ProviderConfigurationError } from "./ProviderConfigurationError";
-import type { IAnalysisProvider } from "./IAnalysisProvider";
 import type { AnalysisResultDomain } from "../../../_types/analysis-result.types";
+import type { IAnalysisProvider } from "./IAnalysisProvider";
+import { ProviderConfigurationError } from "./ProviderConfigurationError";
 
 /**
  * Placeholder for future Turnitin Provider integration.
@@ -10,8 +10,10 @@ export class TurnitinProvider implements IAnalysisProvider {
     jobId: string,
     documentName: string,
     textContent: string,
-    requestId?: string
+    requestId?: string,
   ): Promise<AnalysisResultDomain> {
-    throw new ProviderConfigurationError("Turnitin provider is not configured.");
+    throw new ProviderConfigurationError(
+      "Turnitin provider is not configured.",
+    );
   }
 }

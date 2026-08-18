@@ -15,7 +15,11 @@ export interface DeterministicPlagiarismReport {
   literalSimilarityPercent: number;
   semanticSimilarityPercent: number;
   isExactMatch: boolean;
-  matchType: "EXACT_MATCH" | "PARTIAL_MATCH" | "PARAPHRASE_MATCH" | "NO_SIGNIFICANT_MATCH";
+  matchType:
+    | "EXACT_MATCH"
+    | "PARTIAL_MATCH"
+    | "PARAPHRASE_MATCH"
+    | "NO_SIGNIFICANT_MATCH";
   verifiedSources: MatchedSource[];
   unverifiedCandidates: MatchedSource[];
   matchedSpans: DeterministicMatchSpan[];
@@ -51,17 +55,20 @@ export class DeterministicMatcher {
   /**
    * Extracts clean words with character offset indices.
    */
-  public static extractWords(text: string): Array<{ word: string; start: number; end: number }> {
+  public static extractWords(
+    text: string,
+  ): Array<{ word: string; start: number; end: number }> {
     const words: Array<{ word: string; start: number; end: number }> = [];
     const regex = /[a-zA-Z0-9'-]+/g;
-    let match: RegExpExecArray | null;
+    let match = regex.exec(text);
 
-    while ((match = regex.exec(text)) !== null) {
+    while (match !== null) {
       words.push({
         word: match[0].toLowerCase(),
         start: match.index,
         end: match.index + match[0].length,
       });
+      match = regex.exec(text);
     }
 
     return words;
@@ -70,9 +77,11 @@ export class DeterministicMatcher {
   /**
    * Merges overlapping or adjacent index intervals.
    */
-  public static mergeRanges(ranges: Array<[number, number]>): Array<[number, number]> {
+  public static mergeRanges(
+    ranges: Array<[number, number]>,
+  ): Array<[number, number]> {
     if (ranges.length === 0) return [];
-    
+
     // Sort intervals by start index
     const sorted = [...ranges].sort((a, b) => a[0] - b[0]);
     const merged: Array<[number, number]> = [sorted[0]!];
@@ -99,7 +108,10 @@ export class DeterministicMatcher {
    * Tier 3 (50): Reference encyclopedias, Wikipedia, established publishers, news media
    * Tier 4 (25): General blogs, aggregators, unknown web domains
    */
-  public static getAuthorityTier(sourceUrl?: string, publication?: string): number {
+  public static getAuthorityTier(
+    sourceUrl?: string,
+    publication?: string,
+  ): number {
     if (!sourceUrl) return 25;
     const url = sourceUrl.toLowerCase();
     const pub = (publication || "").toLowerCase();
@@ -107,11 +119,11 @@ export class DeterministicMatcher {
     // Tier 1: Primary institutional archives, government records, and official agencies
     if (
       url.includes("nasa.gov") ||
-      url.includes("loc.gov") || 
-      url.includes("archives.gov") || 
-      url.includes("who.int") || 
-      url.includes("un.org") || 
-      url.includes("gutenberg.org") || 
+      url.includes("loc.gov") ||
+      url.includes("archives.gov") ||
+      url.includes("who.int") ||
+      url.includes("un.org") ||
+      url.includes("gutenberg.org") ||
       url.includes("folger.edu") ||
       url.includes(".gov") ||
       url.includes(".mil") ||
@@ -127,10 +139,10 @@ export class DeterministicMatcher {
 
     // Tier 2: Academic repositories, universities, and peer-reviewed journals
     if (
-      url.includes(".edu") || 
-      url.includes("ncbi.nlm.nih.gov") || 
-      url.includes("nature.com") || 
-      url.includes("arxiv.org") || 
+      url.includes(".edu") ||
+      url.includes("ncbi.nlm.nih.gov") ||
+      url.includes("nature.com") ||
+      url.includes("arxiv.org") ||
       url.includes("doi.org") ||
       url.includes("crossref.org") ||
       url.includes("ipcc.ch") ||
@@ -145,7 +157,7 @@ export class DeterministicMatcher {
 
     // Tier 3: Reference encyclopedias & major publications
     if (
-      url.includes("wikipedia.org") || 
+      url.includes("wikipedia.org") ||
       url.includes("wikimedia.org") ||
       pub.includes("wikimedia") ||
       pub.includes("encyclopedia")
@@ -160,15 +172,23 @@ export class DeterministicMatcher {
    * Evaluates topic relevance between submitted text and candidate page title/content.
    * If a page is about an unrelated topic (e.g. "Pericles's Funeral Oration" for Gettysburg text), it is penalized against the primary work.
    */
-  public static getTopicRelevanceScore(submittedText: string, sourceTitle: string, sourceSnippet: string): number {
-    const normSub = this.normalize(submittedText);
-    const normTitle = this.normalize(sourceTitle);
-    const subWords = this.extractWords(normSub).map(w => w.word);
-    
+  public static getTopicRelevanceScore(
+    submittedText: string,
+    sourceTitle: string,
+    sourceSnippet: string,
+  ): number {
+    const normSub = DeterministicMatcher.normalize(submittedText);
+    const normTitle = DeterministicMatcher.normalize(sourceTitle);
+    const subWords = DeterministicMatcher.extractWords(normSub).map(
+      (w) => w.word,
+    );
+
     // Check title keyword intersection
-    const titleWords = this.extractWords(normTitle).map(w => w.word);
-    const titleOverlap = titleWords.filter(w => subWords.includes(w)).length;
-    
+    const titleWords = DeterministicMatcher.extractWords(normTitle).map(
+      (w) => w.word,
+    );
+    const titleOverlap = titleWords.filter((w) => subWords.includes(w)).length;
+
     return titleOverlap;
   }
 
@@ -177,13 +197,17 @@ export class DeterministicMatcher {
    */
   public static evaluate(
     submittedText: string,
-    candidates: MatchedSource[]
+    candidates: MatchedSource[],
   ): DeterministicPlagiarismReport {
-    const normSubmitted = this.normalize(submittedText);
-    const submittedWords = this.extractWords(submittedText);
+    const normSubmitted = DeterministicMatcher.normalize(submittedText);
+    const submittedWords = DeterministicMatcher.extractWords(submittedText);
     const totalWords = Math.max(1, submittedWords.length);
 
-    if (!submittedText || submittedText.trim().length === 0 || candidates.length === 0) {
+    if (
+      !submittedText ||
+      submittedText.trim().length === 0 ||
+      candidates.length === 0
+    ) {
       return {
         totalSubmittedWords: totalWords,
         matchedWords: 0,
@@ -209,21 +233,28 @@ export class DeterministicMatcher {
         continue;
       }
 
-      const normSource = this.normalize(candidate.originalSnippet || candidate.matchedSnippet || "");
+      const normSource = DeterministicMatcher.normalize(
+        candidate.originalSnippet || candidate.matchedSnippet || "",
+      );
       if (!normSource || normSource.length < 10) {
         unverifiedCandidates.push(candidate);
         continue;
       }
 
-      const sourceWords = this.extractWords(normSource).map(w => w.word);
+      const sourceWords = DeterministicMatcher.extractWords(normSource).map(
+        (w) => w.word,
+      );
       const sourceTextFlat = sourceWords.join(" ");
 
       // 1. Check Exact Match
-      if (normSource.includes(normSubmitted) || normSubmitted.includes(normSource)) {
+      if (
+        normSource.includes(normSubmitted) ||
+        normSubmitted.includes(normSource)
+      ) {
         for (let i = 0; i < submittedWords.length; i++) {
           matchedWordIndices.add(i);
         }
-        
+
         verifiedSources.push({
           ...candidate,
           similarityPercent: 100,
@@ -243,12 +274,18 @@ export class DeterministicMatcher {
       }
 
       // 2. Slicing N-Grams (consecutive 4 to 6 word sequences)
-      const maxNgramSize = Math.min(this.DEFAULT_NGRAM_SIZE, submittedWords.length);
+      const maxNgramSize = Math.min(
+        DeterministicMatcher.DEFAULT_NGRAM_SIZE,
+        submittedWords.length,
+      );
       const matchedRangesForSource: Array<[number, number]> = [];
 
       for (let sz = maxNgramSize; sz >= 4; sz--) {
         for (let i = 0; i <= submittedWords.length - sz; i++) {
-          const ngram = submittedWords.slice(i, i + sz).map(w => w.word).join(" ");
+          const ngram = submittedWords
+            .slice(i, i + sz)
+            .map((w) => w.word)
+            .join(" ");
           if (sourceTextFlat.includes(ngram)) {
             matchedRangesForSource.push([i, i + sz - 1]);
             for (let k = i; k < i + sz; k++) {
@@ -259,14 +296,17 @@ export class DeterministicMatcher {
       }
 
       if (matchedRangesForSource.length > 0) {
-        const merged = this.mergeRanges(matchedRangesForSource);
+        const merged = DeterministicMatcher.mergeRanges(matchedRangesForSource);
         let distinctSourceMatchedWords = 0;
         for (const [start, end] of merged) {
-          distinctSourceMatchedWords += (end - start + 1);
+          distinctSourceMatchedWords += end - start + 1;
         }
 
-        const sourceSimPercent = Math.min(100, Math.round((distinctSourceMatchedWords / totalWords) * 100));
-        
+        const sourceSimPercent = Math.min(
+          100,
+          Math.round((distinctSourceMatchedWords / totalWords) * 100),
+        );
+
         verifiedSources.push({
           ...candidate,
           similarityPercent: sourceSimPercent,
@@ -275,11 +315,17 @@ export class DeterministicMatcher {
         });
 
         matchedSpans.push({
-          submittedStartIndex: submittedWords[matchedRangesForSource[0]![0]]!.start,
-          submittedEndIndex: submittedWords[matchedRangesForSource[matchedRangesForSource.length - 1]![1]]!.end,
+          submittedStartIndex:
+            submittedWords[matchedRangesForSource[0]![0]]!.start,
+          submittedEndIndex:
+            submittedWords[
+              matchedRangesForSource[matchedRangesForSource.length - 1]![1]
+            ]!.end,
           submittedText: submittedText.slice(
             submittedWords[matchedRangesForSource[0]![0]]!.start,
-            submittedWords[matchedRangesForSource[matchedRangesForSource.length - 1]![1]]!.end
+            submittedWords[
+              matchedRangesForSource[matchedRangesForSource.length - 1]![1]
+            ]!.end,
           ),
           sourceText: candidate.originalSnippet,
           wordCount: distinctSourceMatchedWords,
@@ -302,17 +348,33 @@ export class DeterministicMatcher {
       if (b.similarityPercent !== a.similarityPercent) {
         return b.similarityPercent - a.similarityPercent;
       }
-      const tierA = DeterministicMatcher.getAuthorityTier(a.sourceUrl, a.publication);
-      const tierB = DeterministicMatcher.getAuthorityTier(b.sourceUrl, b.publication);
+      const tierA = DeterministicMatcher.getAuthorityTier(
+        a.sourceUrl,
+        a.publication,
+      );
+      const tierB = DeterministicMatcher.getAuthorityTier(
+        b.sourceUrl,
+        b.publication,
+      );
       if (tierB !== tierA) {
         return tierB - tierA;
       }
-      const relA = DeterministicMatcher.getTopicRelevanceScore(submittedText, a.sourceTitle, a.originalSnippet);
-      const relB = DeterministicMatcher.getTopicRelevanceScore(submittedText, b.sourceTitle, b.originalSnippet);
+      const relA = DeterministicMatcher.getTopicRelevanceScore(
+        submittedText,
+        a.sourceTitle,
+        a.originalSnippet,
+      );
+      const relB = DeterministicMatcher.getTopicRelevanceScore(
+        submittedText,
+        b.sourceTitle,
+        b.originalSnippet,
+      );
       if (relB !== relA) {
         return relB - relA;
       }
-      return (b.originalSnippet?.length || 0) - (a.originalSnippet?.length || 0);
+      return (
+        (b.originalSnippet?.length || 0) - (a.originalSnippet?.length || 0)
+      );
     });
 
     // Deduplicate and assign PRIMARY, SECONDARY, and DUPLICATE roles
@@ -328,13 +390,21 @@ export class DeterministicMatcher {
       if (src.sourceUrl) seenUrls.add(src.sourceUrl);
 
       // Generate normalized fingerprint for the matched snippet / passage
-      const passageWords = this.extractWords(this.normalize(src.originalSnippet || src.matchedSnippet || "")).map(w => w.word);
+      const passageWords = DeterministicMatcher.extractWords(
+        DeterministicMatcher.normalize(
+          src.originalSnippet || src.matchedSnippet || "",
+        ),
+      ).map((w) => w.word);
       const fingerprint = passageWords.slice(0, 12).join(" ");
 
       if (i === 0) {
         // Highest ranked authority source is PRIMARY
         src.sourceRole = "PRIMARY";
-        src.matchedWordCount = src.matchedWordCount || (src.similarityPercent >= 90 ? totalWords : Math.round((src.similarityPercent / 100) * totalWords));
+        src.matchedWordCount =
+          src.matchedWordCount ||
+          (src.similarityPercent >= 90
+            ? totalWords
+            : Math.round((src.similarityPercent / 100) * totalWords));
         finalizedSources.push(src);
         if (fingerprint.length > 0) seenFingerprints.set(fingerprint, src.id);
       } else {
@@ -346,16 +416,26 @@ export class DeterministicMatcher {
           src.sourceRole = "SECONDARY";
           if (fingerprint.length > 0) seenFingerprints.set(fingerprint, src.id);
         }
-        src.matchedWordCount = src.matchedWordCount || (src.similarityPercent >= 90 ? totalWords : Math.round((src.similarityPercent / 100) * totalWords));
+        src.matchedWordCount =
+          src.matchedWordCount ||
+          (src.similarityPercent >= 90
+            ? totalWords
+            : Math.round((src.similarityPercent / 100) * totalWords));
         finalizedSources.push(src);
       }
     }
 
     const finalMatchedWords = Math.min(totalWords, matchedWordIndices.size);
-    const literalSimilarityPercent = Math.min(100, Math.round((finalMatchedWords / totalWords) * 100));
-    const isExactMatch = literalSimilarityPercent >= 90 && finalizedSources.some(s => s.similarityPercent >= 90);
-    
-    let matchType: DeterministicPlagiarismReport["matchType"] = "NO_SIGNIFICANT_MATCH";
+    const literalSimilarityPercent = Math.min(
+      100,
+      Math.round((finalMatchedWords / totalWords) * 100),
+    );
+    const isExactMatch =
+      literalSimilarityPercent >= 90 &&
+      finalizedSources.some((s) => s.similarityPercent >= 90);
+
+    let matchType: DeterministicPlagiarismReport["matchType"] =
+      "NO_SIGNIFICANT_MATCH";
     if (isExactMatch) {
       matchType = "EXACT_MATCH";
     } else if (literalSimilarityPercent >= 30) {

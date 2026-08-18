@@ -1,7 +1,7 @@
 import type { AnalysisResultDomain } from "../_types/analysis-result.types";
+import type { IAnalysisProvider } from "./providers/interfaces/IAnalysisProvider";
 import { MockResultProvider } from "./providers/mock-result.provider";
 import { OllimaResultProvider } from "./providers/ollima-result.provider";
-import type { IAnalysisProvider } from "./providers/interfaces/IAnalysisProvider";
 
 /**
  * Service builder normalizing, validating, and constructing immutable AnalysisResultDomain entities.
@@ -24,7 +24,7 @@ export class ResultBuilderService {
     jobId: string,
     documentName: string,
     textContent?: string,
-    analysisType?: string
+    analysisType?: string,
   ): Promise<AnalysisResultDomain> {
     const cached = this.resultCache.get(jobId);
     if (cached) {
@@ -40,26 +40,35 @@ export class ResultBuilderService {
         documentName,
         textContent || "",
         requestId,
-        analysisType
+        analysisType,
       );
-      
+
       const normalizedResult = this.validateAndNormalize(domainResult);
       this.resultCache.set(jobId, normalizedResult);
       return normalizedResult;
     } catch (err) {
-      const isDevMock = process.env.NODE_ENV === "development" && process.env.MOCK_ANALYSIS === "true";
+      const isDevMock =
+        process.env.NODE_ENV === "development" &&
+        process.env.MOCK_ANALYSIS === "true";
       if (isDevMock) {
-        console.warn("Ollima Provider execution failed. Falling back to MockProvider:", err);
+        console.warn(
+          "Ollima Provider execution failed. Falling back to MockProvider:",
+          err,
+        );
         const mockResult = await this.mockProvider.generateResult(
           jobId,
           documentName,
           textContent || "",
-          requestId
+          requestId,
         );
-        
+
         // Inject fallback failure metadata
-        mockResult.metadata.providerName = "Development Fallback (Mock Provider)";
-        mockResult.metadata.failureReason = typeof err === "object" && err && "message" in err ? String((err as any).message) : "Automatic fallback";
+        mockResult.metadata.providerName =
+          "Development Fallback (Mock Provider)";
+        mockResult.metadata.failureReason =
+          typeof err === "object" && err && "message" in err
+            ? String((err as any).message)
+            : "Automatic fallback";
 
         const normalizedResult = this.validateAndNormalize(mockResult);
         this.resultCache.set(jobId, normalizedResult);
@@ -76,9 +85,11 @@ export class ResultBuilderService {
    * @param result Raw domain result payload.
    * @returns Validated AnalysisResultDomain entity.
    */
-  private validateAndNormalize(result: AnalysisResultDomain): AnalysisResultDomain {
+  private validateAndNormalize(
+    result: AnalysisResultDomain,
+  ): AnalysisResultDomain {
     // Ensure numbers are bounded between 0 and 100, while preserving negative sentinels (e.g. -1)
-    const clamp = (n: number) => n < 0 ? n : Math.min(100, Math.max(0, n));
+    const clamp = (n: number) => (n < 0 ? n : Math.min(100, Math.max(0, n)));
 
     return Object.freeze({
       ...result,

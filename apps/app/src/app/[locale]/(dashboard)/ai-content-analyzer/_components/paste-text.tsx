@@ -73,7 +73,9 @@ export function PasteText({
       <div className="flex items-center justify-between text-xs text-primary/50">
         <div className="flex items-center gap-4 font-mono">
           <span>Words: {metrics.wordCount}</span>
-          <span>Chars: {metrics.characterCount} / {MAX_TEXT_LENGTH_CHARS}</span>
+          <span>
+            Chars: {metrics.characterCount} / {MAX_TEXT_LENGTH_CHARS}
+          </span>
           <span>Lines: {metrics.lineCount}</span>
         </div>
         {value.length > 0 && value.length < MIN_TEXT_LENGTH_CHARS && (

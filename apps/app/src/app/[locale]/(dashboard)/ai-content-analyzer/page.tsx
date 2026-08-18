@@ -98,7 +98,9 @@ export default function AIContentAnalyzerPage() {
             <StatCard
               icon={FileText}
               label="Total Jobs"
-              value={historyJobs.length + (activeJob ? 1 : 0) + queuedJobs.length}
+              value={
+                historyJobs.length + (activeJob ? 1 : 0) + queuedJobs.length
+              }
               sub="Analysis items"
             />
             <StatCard
@@ -153,7 +155,8 @@ export default function AIContentAnalyzerPage() {
                 Create Analysis Job
               </h2>
               <p className="text-xs text-primary/60">
-                Choose an input method and analysis mode to submit a new job to the engine.
+                Choose an input method and analysis mode to submit a new job to
+                the engine.
               </p>
             </div>
 
@@ -204,7 +207,11 @@ export default function AIContentAnalyzerPage() {
 
             {/* Submit Action Button */}
             <div className="flex justify-end border-t border-border/50 pt-4">
-              <Button onClick={runAnalysis} className="min-w-[160px]" disabled={!!activeJob}>
+              <Button
+                onClick={runAnalysis}
+                className="min-w-[160px]"
+                disabled={!!activeJob}
+              >
                 {activeJob ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />

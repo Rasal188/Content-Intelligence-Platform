@@ -1,6 +1,6 @@
-import { ProviderConfigurationError } from "./interfaces/ProviderConfigurationError";
-import type { IAnalysisProvider } from "./interfaces/IAnalysisProvider";
 import type { AnalysisResultDomain } from "../../_types/analysis-result.types";
+import type { IAnalysisProvider } from "./interfaces/IAnalysisProvider";
+import { ProviderConfigurationError } from "./interfaces/ProviderConfigurationError";
 
 /**
  * Placeholder for future OllaGraph Provider integration.
@@ -18,9 +18,11 @@ export class OllaGraphProvider implements IAnalysisProvider {
   public async analyze(
     jobId: string,
     documentName: string,
-    textContent: string = "",
-    requestId?: string
+    textContent = "",
+    requestId?: string,
   ): Promise<AnalysisResultDomain> {
-    throw new ProviderConfigurationError("OllaGraph provider is not configured.");
+    throw new ProviderConfigurationError(
+      "OllaGraph provider is not configured.",
+    );
   }
 }

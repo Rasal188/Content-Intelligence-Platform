@@ -21,12 +21,21 @@ export type InputSource = "file" | "paste";
 /**
  * Supported analysis types/modes.
  */
-export type AnalysisType = "ai_detection" | "plagiarism" | "ai_humanizer" | "full_audit";
+export type AnalysisType =
+  | "ai_detection"
+  | "plagiarism"
+  | "ai_humanizer"
+  | "full_audit";
 
 /**
  * Status states for an analysis job.
  */
-export type AnalysisStatus = "idle" | "queued" | "processing" | "completed" | "failed";
+export type AnalysisStatus =
+  | "idle"
+  | "queued"
+  | "processing"
+  | "completed"
+  | "failed";
 
 /**
  * Animated processing stage for progressive loading.

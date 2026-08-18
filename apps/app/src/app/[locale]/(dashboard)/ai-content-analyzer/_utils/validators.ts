@@ -29,7 +29,9 @@ export function getTextMetrics(text: string): {
  * @param text Input raw text string.
  * @returns ValidationResult object.
  */
-export function validateTextContent(text: string | undefined): ValidationResult {
+export function validateTextContent(
+  text: string | undefined,
+): ValidationResult {
   if (!text || text.trim().length === 0) {
     return { isValid: false, error: VALIDATION_MESSAGES.EMPTY_TEXT };
   }
@@ -48,7 +50,9 @@ export function validateTextContent(text: string | undefined): ValidationResult 
  * @param request AnalysisRequest payload.
  * @returns ValidationResult with status and error message.
  */
-export function validateAnalysisRequest(request: AnalysisRequest): ValidationResult {
+export function validateAnalysisRequest(
+  request: AnalysisRequest,
+): ValidationResult {
   if (!request) {
     return { isValid: false, error: VALIDATION_MESSAGES.UNKNOWN_ERROR };
   }

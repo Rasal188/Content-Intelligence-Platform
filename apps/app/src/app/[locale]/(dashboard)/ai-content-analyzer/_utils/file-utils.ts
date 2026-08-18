@@ -40,8 +40,12 @@ export function isSupportedFileType(file: File | string): boolean {
     return (SUPPORTED_FILE_EXTENSIONS as readonly string[]).includes(ext);
   }
   const ext = getFileExtension(file.name);
-  const isExtValid = (SUPPORTED_FILE_EXTENSIONS as readonly string[]).includes(ext);
-  const isMimeValid = (SUPPORTED_MIME_TYPES as readonly string[]).includes(file.type);
+  const isExtValid = (SUPPORTED_FILE_EXTENSIONS as readonly string[]).includes(
+    ext,
+  );
+  const isMimeValid = (SUPPORTED_MIME_TYPES as readonly string[]).includes(
+    file.type,
+  );
   return isExtValid || isMimeValid;
 }
 

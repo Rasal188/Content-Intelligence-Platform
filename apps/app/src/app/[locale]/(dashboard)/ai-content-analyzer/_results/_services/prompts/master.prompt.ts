@@ -73,5 +73,3 @@ wq: gr(grammar) re(readability) fl(flow) or(organization) vo(vocabulary) to(tone
 
 OUTPUT STRUCTURE:
 {"af":{"sB":X,"sP":X,"lR":X,"vD":X,"tO":X,"pR":X,"sS":X,"tL":X,"gW":X,"cI":X,"iD":X,"hL":X,"sC":X,"nA":X,"pE":X,"eA":X,"cr":X,"hi":X,"cs":X,"ha":X},"oe":{"sp":X,"uW":X,"lD":X,"cO":X,"oE":X,"bp":X,"mL":X,"eF":X,"cc":X,"gE":X},"sa":{"rW":X,"rP":X,"rPa":X,"rE":X,"tR":X,"fI":X,"aS":X,"rU":X},"wq":{"gr":X,"re":X,"fl":X,"or":X,"vo":X,"to":X,"pQ":X,"sV":X,"aQ":X,"eu":X},"ev":[{"k":"af.tL","q":"verbatim quote"}]}`;
-
-

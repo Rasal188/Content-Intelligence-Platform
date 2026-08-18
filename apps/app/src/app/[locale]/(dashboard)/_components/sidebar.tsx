@@ -25,7 +25,11 @@ import { ThemeSwitcher } from "./theme-switcher";
 
 const NAV = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/ai-content-analyzer", label: "AI Content Analyzer", icon: Sparkles },
+  {
+    href: "/ai-content-analyzer",
+    label: "AI Content Analyzer",
+    icon: Sparkles,
+  },
   { href: "/jobs", label: "Jobs", icon: ListChecks },
   { href: "/platform", label: "Platform", icon: Boxes },
   { href: "/files", label: "Files", icon: FolderOpen },
@@ -92,12 +96,18 @@ export function Sidebar() {
         <div className="mb-2 flex items-center gap-2">
           {user?.avatarUrl ? (
             // biome-ignore lint/a11y/useAltText: decorative avatar
-            <img src={user.avatarUrl} alt="" className="h-8 w-8 rounded-full object-cover" />
+            <img
+              src={user.avatarUrl}
+              alt=""
+              className="h-8 w-8 rounded-full object-cover"
+            />
           ) : (
             <span className="h-8 w-8 shrink-0 rounded-full bg-gradient-to-br from-lime-400 via-cyan-300 to-blue-500" />
           )}
           <div className="min-w-0">
-            <p className="truncate text-sm font-medium text-primary/80">{user?.name || "—"}</p>
+            <p className="truncate text-sm font-medium text-primary/80">
+              {user?.name || "—"}
+            </p>
             <p className="truncate text-xs text-primary/50">{user?.email}</p>
           </div>
         </div>
@@ -118,14 +128,20 @@ export function Sidebar() {
   return (
     <>
       <div className="flex h-14 items-center gap-3 border-b border-border bg-card px-4 md:hidden">
-        <button type="button" aria-label="Open menu" onClick={() => setOpen(true)}>
+        <button
+          type="button"
+          aria-label="Open menu"
+          onClick={() => setOpen(true)}
+        >
           <Menu className="h-5 w-5" />
         </button>
         <Image src="/logo.png" alt="logo" width={22} height={22} />
         <span className="font-mono text-sm font-medium">myos</span>
       </div>
 
-      <aside className="sticky top-0 hidden h-screen shrink-0 md:block">{Body}</aside>
+      <aside className="sticky top-0 hidden h-screen shrink-0 md:block">
+        {Body}
+      </aside>
 
       {open && (
         <div className="fixed inset-0 z-50 md:hidden">

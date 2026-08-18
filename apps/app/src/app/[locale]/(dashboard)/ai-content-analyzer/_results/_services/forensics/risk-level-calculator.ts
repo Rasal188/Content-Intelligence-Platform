@@ -30,7 +30,9 @@ export class RiskLevelCalculator {
    * @param score Calculated score (0 to 100).
    * @returns Risk category string.
    */
-  public static getLabel(score: number): "Very Low" | "Low" | "Moderate" | "High" | "Very High" {
+  public static getLabel(
+    score: number,
+  ): "Very Low" | "Low" | "Moderate" | "High" | "Very High" {
     if (score <= 20) return "Very Low";
     if (score <= 40) return "Low";
     if (score <= 60) return "Moderate";

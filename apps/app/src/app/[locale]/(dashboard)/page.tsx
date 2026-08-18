@@ -59,7 +59,9 @@ export default function Home() {
         <div className="rounded-lg border border-border bg-card">
           <div className="flex items-center gap-2 border-b border-border px-4 py-3">
             <Activity className="h-4 w-4 text-primary/50" />
-            <h2 className="text-sm font-medium text-primary">Recent activity</h2>
+            <h2 className="text-sm font-medium text-primary">
+              Recent activity
+            </h2>
           </div>
           <div className="divide-y divide-border/50">
             {audit === undefined ? (

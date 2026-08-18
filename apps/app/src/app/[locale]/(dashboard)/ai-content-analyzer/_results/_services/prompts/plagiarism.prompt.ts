@@ -138,14 +138,25 @@ Do not claim exact matching without textual evidence.
 Evidence is more important than producing a high plagiarism score.`;
 
 export class PlagiarismPromptBuilder {
-  public static buildSourceDiscoveryPrompt(text: string): { system: string; user: string } {
+  public static buildSourceDiscoveryPrompt(text: string): {
+    system: string;
+    user: string;
+  } {
     return {
       system: SOURCE_DISCOVERY_SYSTEM_PROMPT,
       user: `Discover and verify any public web, literary, encyclopedic, or academic sources that contain verbatim passages or close paraphrases of the following text:\n\n---\n${text}\n---`,
     };
   }
 
-  public static buildAnalysisPrompt(text: string, verifiedSources: Array<{ id: string; title: string; url: string; passage: string }>): { system: string; user: string } {
+  public static buildAnalysisPrompt(
+    text: string,
+    verifiedSources: Array<{
+      id: string;
+      title: string;
+      url: string;
+      passage: string;
+    }>,
+  ): { system: string; user: string } {
     return {
       system: PLAGIARISM_ANALYSIS_SYSTEM_PROMPT,
       user: `Compare the submitted text against the following verified source passages:\n\nSUBMITTED TEXT:\n${text}\n\nVERIFIED SOURCES:\n${JSON.stringify(verifiedSources, null, 2)}`,

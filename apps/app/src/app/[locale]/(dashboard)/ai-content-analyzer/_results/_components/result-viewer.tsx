@@ -1,20 +1,28 @@
 "use client";
 
 import { Button } from "@v1/ui/button";
-import { Download, FileSearch, FileText, Loader2, Sparkles, Wand2, X } from "lucide-react";
+import {
+  Download,
+  FileSearch,
+  FileText,
+  Loader2,
+  Sparkles,
+  Wand2,
+  X,
+} from "lucide-react";
 import type { FC } from "react";
+import type { AnalysisJobItem } from "../../_jobs/analysis-job.types";
 import { useAnalysisResult } from "../_hooks/use-analysis-result";
 import { HighlightedTextViewer } from "./highlighted-text-viewer";
+import { HumanizerResultCard } from "./humanizer-result-card";
 import { MatchedSources } from "./matched-sources";
 import { MetadataCard } from "./metadata-card";
+import { PlagiarismResultCard } from "./plagiarism-result-card";
 import { RecommendationsPanel } from "./recommendations-panel";
 import { ResultSummaryCard } from "./result-summary-card";
+import { RichAuditPanel } from "./rich-audit-panel";
 import { StatisticsCard } from "./statistics-card";
 import { WarningsPanel } from "./warnings-panel";
-import { RichAuditPanel } from "./rich-audit-panel";
-import { HumanizerResultCard } from "./humanizer-result-card";
-import { PlagiarismResultCard } from "./plagiarism-result-card";
-import type { AnalysisJobItem } from "../../_jobs/analysis-job.types";
 
 interface ResultViewerProps {
   jobId: string;
@@ -34,7 +42,8 @@ export const ResultViewer: FC<ResultViewerProps> = ({
   job,
   onClose,
 }) => {
-  const isHumanizerJob = job?.analysisType === "ai_humanizer" || job?.isHumanized;
+  const isHumanizerJob =
+    job?.analysisType === "ai_humanizer" || job?.isHumanized;
   const isPlagiarismJob = job?.analysisType === "plagiarism";
 
   const { viewModel, isLoading, error } = useAnalysisResult(

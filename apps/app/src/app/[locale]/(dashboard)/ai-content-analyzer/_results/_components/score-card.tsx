@@ -17,17 +17,19 @@ export const ScoreCard: FC<ScoreCardProps> = ({ score }) => {
     if (score.id === "score-orig") {
       scoreColorStyle = "text-green-600 dark:text-green-400";
     } else if (score.id === "score-ai") {
-      scoreColorStyle = score.value > 50 
-        ? "text-red-600 dark:text-red-400" 
-        : score.value > 20 
-          ? "text-orange-500 dark:text-orange-400" 
-          : "text-green-600 dark:text-green-400";
+      scoreColorStyle =
+        score.value > 50
+          ? "text-red-600 dark:text-red-400"
+          : score.value > 20
+            ? "text-orange-500 dark:text-orange-400"
+            : "text-green-600 dark:text-green-400";
     } else if (score.id === "score-plag") {
-      scoreColorStyle = score.value > 20 
-        ? "text-red-600 dark:text-red-400" 
-        : score.value > 5 
-          ? "text-yellow-600 dark:text-yellow-500" 
-          : "text-green-600 dark:text-green-400";
+      scoreColorStyle =
+        score.value > 20
+          ? "text-red-600 dark:text-red-400"
+          : score.value > 5
+            ? "text-yellow-600 dark:text-yellow-500"
+            : "text-green-600 dark:text-green-400";
     } else if (score.id === "score-read") {
       scoreColorStyle = "text-blue-600 dark:text-blue-400";
     }
@@ -37,7 +39,9 @@ export const ScoreCard: FC<ScoreCardProps> = ({ score }) => {
     <div className="rounded-lg border border-border bg-card p-4 space-y-2 flex flex-col justify-between">
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-primary/60">{score.name}</span>
+          <span className="text-xs font-medium text-primary/60">
+            {score.name}
+          </span>
           <span className="text-[10px] font-mono text-primary/40">
             Confidence: {isValEmpty ? "--" : `${score.confidence}%`}
           </span>
@@ -51,7 +55,9 @@ export const ScoreCard: FC<ScoreCardProps> = ({ score }) => {
       </div>
       {score.id === "score-plag" && (
         <p className="text-[10px] leading-snug text-primary/40 border-t border-border/40 pt-2 mt-1 italic">
-          This assessment is generated from forensic linguistic and structural analysis of the submitted document. External source verification and web-scale plagiarism detection are not currently enabled.
+          This assessment is generated from forensic linguistic and structural
+          analysis of the submitted document. External source verification and
+          web-scale plagiarism detection are not currently enabled.
         </p>
       )}
     </div>

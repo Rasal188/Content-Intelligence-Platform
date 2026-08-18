@@ -11,7 +11,7 @@ import {
   Sparkles,
   Wand2,
 } from "lucide-react";
-import { useState, type FC } from "react";
+import { type FC, useState } from "react";
 import type { AnalysisJobItem } from "../../_jobs/analysis-job.types";
 
 interface HumanizerResultCardProps {
@@ -27,13 +27,13 @@ export const HumanizerResultCard: FC<HumanizerResultCardProps> = ({
   onRetest,
 }) => {
   const [copied, setCopied] = useState(false);
-  const [activeTab, setActiveTab] = useState<"side-by-side" | "humanized" | "original">("side-by-side");
+  const [activeTab, setActiveTab] = useState<
+    "side-by-side" | "humanized" | "original"
+  >("side-by-side");
 
-  const original = job.originalRequest?.text || job.textContent || "Original text unavailable";
-  const humanized =
-    job.humanizedText ||
-    job.result?.humanizedText ||
-    original;
+  const original =
+    job.originalRequest?.text || job.textContent || "Original text unavailable";
+  const humanized = job.humanizedText || job.result?.humanizedText || original;
 
   const beforeAiScore = job.result?.beforeAiScore ?? 94;
   const afterAiScore = job.result?.humanizedAiScore ?? 4;
@@ -78,7 +78,8 @@ export const HumanizerResultCard: FC<HumanizerResultCardProps> = ({
                 AI Content Humanized
               </h2>
               <p className="text-xs text-primary/60">
-                Rewritten with high linguistic burstiness and zero synthetic indicators
+                Rewritten with high linguistic burstiness and zero synthetic
+                indicators
               </p>
             </div>
           </div>
@@ -127,7 +128,9 @@ export const HumanizerResultCard: FC<HumanizerResultCardProps> = ({
 
           <div className="flex items-center justify-center text-primary/40">
             <ChevronRight className="hidden sm:block h-6 w-6" />
-            <span className="sm:hidden text-xs">Transforming $\rightarrow$</span>
+            <span className="sm:hidden text-xs">
+              Transforming $\rightarrow$
+            </span>
           </div>
 
           <div className="flex items-center justify-between rounded-lg border border-green-500/20 bg-green-500/10 p-3">
@@ -135,13 +138,16 @@ export const HumanizerResultCard: FC<HumanizerResultCardProps> = ({
               After (Humanized)
             </span>
             <span className="font-mono text-base font-bold text-green-600 dark:text-green-400">
-              {afterAiScore <= 10 ? "Low AI-likelihood" : `${afterAiScore}% AI-likelihood`}
+              {afterAiScore <= 10
+                ? "Low AI-likelihood"
+                : `${afterAiScore}% AI-likelihood`}
             </span>
           </div>
         </div>
 
         <p className="text-[11px] text-primary/50 italic text-center sm:text-left">
-          Note: AI detection is probabilistic and should not be treated as definitive proof of authorship.
+          Note: AI detection is probabilistic and should not be treated as
+          definitive proof of authorship.
         </p>
       </div>
 
@@ -254,25 +260,48 @@ export const HumanizerResultCard: FC<HumanizerResultCardProps> = ({
       {/* Quality Indicators & Fidelity Badges */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-5 text-xs">
         <div className="rounded-lg border border-border bg-secondary/30 p-2.5 text-center">
-          <span className="text-[10px] uppercase font-bold text-primary/50 block mb-0.5">Meaning</span>
-          <span className="font-semibold text-green-600 dark:text-green-400">Preserved</span>
+          <span className="text-[10px] uppercase font-bold text-primary/50 block mb-0.5">
+            Meaning
+          </span>
+          <span className="font-semibold text-green-600 dark:text-green-400">
+            Preserved
+          </span>
         </div>
         <div className="rounded-lg border border-border bg-secondary/30 p-2.5 text-center">
-          <span className="text-[10px] uppercase font-bold text-primary/50 block mb-0.5">Technical Terms</span>
-          <span className="font-semibold text-green-600 dark:text-green-400">Preserved</span>
+          <span className="text-[10px] uppercase font-bold text-primary/50 block mb-0.5">
+            Technical Terms
+          </span>
+          <span className="font-semibold text-green-600 dark:text-green-400">
+            Preserved
+          </span>
         </div>
         <div className="rounded-lg border border-border bg-secondary/30 p-2.5 text-center">
-          <span className="text-[10px] uppercase font-bold text-primary/50 block mb-0.5">Numbers & Facts</span>
-          <span className="font-semibold text-green-600 dark:text-green-400">Preserved</span>
+          <span className="text-[10px] uppercase font-bold text-primary/50 block mb-0.5">
+            Numbers & Facts
+          </span>
+          <span className="font-semibold text-green-600 dark:text-green-400">
+            Preserved
+          </span>
         </div>
         <div className="rounded-lg border border-border bg-secondary/30 p-2.5 text-center">
-          <span className="text-[10px] uppercase font-bold text-primary/50 block mb-0.5">Citations / URLs</span>
-          <span className="font-semibold text-green-600 dark:text-green-400">Preserved</span>
+          <span className="text-[10px] uppercase font-bold text-primary/50 block mb-0.5">
+            Citations / URLs
+          </span>
+          <span className="font-semibold text-green-600 dark:text-green-400">
+            Preserved
+          </span>
         </div>
         <div className="rounded-lg border border-border bg-secondary/30 p-2.5 text-center col-span-2 sm:col-span-1">
-          <span className="text-[10px] uppercase font-bold text-primary/50 block mb-0.5">Content Retention</span>
+          <span className="text-[10px] uppercase font-bold text-primary/50 block mb-0.5">
+            Content Retention
+          </span>
           <span className="font-semibold text-green-600 dark:text-green-400">
-            {Math.round((humanized.split(/\s+/).filter(Boolean).length / Math.max(1, original.split(/\s+/).filter(Boolean).length)) * 100)}%
+            {Math.round(
+              (humanized.split(/\s+/).filter(Boolean).length /
+                Math.max(1, original.split(/\s+/).filter(Boolean).length)) *
+                100,
+            )}
+            %
           </span>
         </div>
       </div>
@@ -280,7 +309,8 @@ export const HumanizerResultCard: FC<HumanizerResultCardProps> = ({
       {/* Transformation Details & Highlights */}
       <div className="rounded-lg border border-border bg-secondary/30 p-4 space-y-2">
         <h4 className="text-xs font-semibold text-primary uppercase tracking-wide flex items-center gap-1.5">
-          <FileCheck className="h-3.5 w-3.5 text-primary" /> Key Linguistic Improvements Applied
+          <FileCheck className="h-3.5 w-3.5 text-primary" /> Key Linguistic
+          Improvements Applied
         </h4>
         <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 text-xs text-primary/80">
           {improvements.map((item, idx) => (

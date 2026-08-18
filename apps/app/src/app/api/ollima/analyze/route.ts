@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { PromptBuilderService } from "../../../[locale]/(dashboard)/ai-content-analyzer/_results/_services/prompt-builder.service";
-import { ResultResponseValidator } from "../../../[locale]/(dashboard)/ai-content-analyzer/_results/_services/result-response-validator.service";
 import { CompactKeyMapper } from "../../../[locale]/(dashboard)/ai-content-analyzer/_results/_services/forensics/compact-key-mapper";
 import { WebPlagiarismMatcher } from "../../../[locale]/(dashboard)/ai-content-analyzer/_results/_services/forensics/web-plagiarism-matcher.service";
+import { PromptBuilderService } from "../../../[locale]/(dashboard)/ai-content-analyzer/_results/_services/prompt-builder.service";
 import { PROMPT_VERSION } from "../../../[locale]/(dashboard)/ai-content-analyzer/_results/_services/prompt-config";
+import { ResultResponseValidator } from "../../../[locale]/(dashboard)/ai-content-analyzer/_results/_services/result-response-validator.service";
 
 /**
  * Server-side proxy routing analysis queries to the company's Ollima gateway.
@@ -17,8 +17,9 @@ export async function POST(req: Request) {
     const { text, jobId, documentName, analysisType } = await req.json();
 
     const apiKey = process.env.OLLIMA_API_KEY;
-    const apiBaseUrl = process.env.OLLIMA_API_BASE_URL || "https://api.ollima.com";
-    
+    const apiBaseUrl =
+      process.env.OLLIMA_API_BASE_URL || "https://api.ollima.com";
+
     // Dedicated model routing:
     // ✍️ Humanizer → Claude Sonnet 4.6 (claude-sonnet-4.6)
     // 🔎 Plagiarism Analysis → Gemini 3.1 Pro Low (gemini-3.1-pro-low)
@@ -27,27 +28,34 @@ export async function POST(req: Request) {
     let model = process.env.OLLIMA_MODEL || "claude-sonnet-4.6";
     if (analysisType === "plagiarism" || analysisType === "plagiarism-check") {
       model = process.env.OLLIMA_PLAGIARISM_MODEL || "gemini-3.1-pro-low";
-    } else if (analysisType === "ai-detection" || analysisType === "ai-content-detection") {
+    } else if (
+      analysisType === "ai-detection" ||
+      analysisType === "ai-content-detection"
+    ) {
       model = process.env.OLLIMA_AI_DETECTION_MODEL || "claude-sonnet-4.6";
     }
-      
+
     const promptVersion = process.env.PROMPT_VERSION || PROMPT_VERSION;
 
     // Parse timeout — allow longer wall-clock time for streaming (default 120s)
     const timeoutVal = process.env.OLLIMA_TIMEOUT
-      ? parseInt(process.env.OLLIMA_TIMEOUT, 10)
+      ? Number.parseInt(process.env.OLLIMA_TIMEOUT, 10)
       : 120000;
 
     if (!apiKey) {
       return NextResponse.json(
-        { error: "Ollima API Key not configured. Please set OLLIMA_API_KEY in .env.local" },
-        { status: 400 }
+        {
+          error:
+            "Ollima API Key not configured. Please set OLLIMA_API_KEY in .env.local",
+        },
+        { status: 400 },
       );
     }
 
     // 1. Build prompt
     const t0 = Date.now();
-    const { system: systemPrompt, user: userPrompt } = PromptBuilderService.buildPrompt(promptVersion, text);
+    const { system: systemPrompt, user: userPrompt } =
+      PromptBuilderService.buildPrompt(promptVersion, text);
     const t1 = Date.now();
     const promptBuildTimeMs = t1 - t0;
 
@@ -63,7 +71,7 @@ export async function POST(req: Request) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${apiKey}`,
+          Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
           model,
@@ -84,7 +92,7 @@ export async function POST(req: Request) {
         clearTimeout(timeoutId);
         return NextResponse.json(
           { error: `Ollima API returned status code ${response.status}` },
-          { status: response.status }
+          { status: response.status },
         );
       }
 
@@ -92,7 +100,10 @@ export async function POST(req: Request) {
       const reader = response.body?.getReader();
       if (!reader) {
         clearTimeout(timeoutId);
-        return NextResponse.json({ error: "Streaming response body unavailable" }, { status: 500 });
+        return NextResponse.json(
+          { error: "Streaming response body unavailable" },
+          { status: 500 },
+        );
       }
 
       const decoder = new TextDecoder();
@@ -118,7 +129,9 @@ export async function POST(req: Request) {
               providerRequestId = parsed.id;
             }
             const choices = Array.isArray(parsed.choices) ? parsed.choices : [];
-            const delta = (choices[0] as Record<string, unknown>)?.delta as Record<string, unknown> | undefined;
+            const delta = (choices[0] as Record<string, unknown>)?.delta as
+              | Record<string, unknown>
+              | undefined;
             // Extract ONLY actual content tokens (ignore reasoning_content / thought streams)
             if (typeof delta?.content === "string") {
               accumulated += delta.content;
@@ -134,7 +147,10 @@ export async function POST(req: Request) {
       const completionTimeMs = t3 - t2;
 
       if (!accumulated) {
-        return NextResponse.json({ error: "Empty completion text returned from Ollima" }, { status: 500 });
+        return NextResponse.json(
+          { error: "Empty completion text returned from Ollima" },
+          { status: 500 },
+        );
       }
 
       // 4. Clean markdown code fencing if returned by the LLM
@@ -157,8 +173,11 @@ export async function POST(req: Request) {
       try {
         resultJson = JSON.parse(cleaned);
       } catch (parseErr) {
-        console.warn("SSE stream parse failed. Attempting non-streaming direct completion fallback:", parseErr);
-        
+        console.warn(
+          "SSE stream parse failed. Attempting non-streaming direct completion fallback:",
+          parseErr,
+        );
+
         // Non-streaming direct completion fallback
         try {
           const directRes = await fetch(completionsUrl, {
@@ -185,9 +204,13 @@ export async function POST(req: Request) {
             const rawContent = directData.choices?.[0]?.message?.content || "";
             let directCleaned = rawContent.trim();
             if (directCleaned.startsWith("```json")) {
-              directCleaned = directCleaned.replace(/^```json\s*/, "").replace(/\s*```$/, "");
+              directCleaned = directCleaned
+                .replace(/^```json\s*/, "")
+                .replace(/\s*```$/, "");
             } else if (directCleaned.startsWith("```")) {
-              directCleaned = directCleaned.replace(/^```\s*/, "").replace(/\s*```$/, "");
+              directCleaned = directCleaned
+                .replace(/^```\s*/, "")
+                .replace(/\s*```$/, "");
             }
             const fBrace = directCleaned.indexOf("{");
             const lBrace = directCleaned.lastIndexOf("}");
@@ -196,22 +219,34 @@ export async function POST(req: Request) {
             }
             resultJson = JSON.parse(directCleaned);
           } else {
-            return NextResponse.json({ error: "Malformed JSON schema returned by AI gateway" }, { status: 422 });
+            return NextResponse.json(
+              { error: "Malformed JSON schema returned by AI gateway" },
+              { status: 422 },
+            );
           }
         } catch (directErr) {
           console.error("Non-streaming fallback also failed:", directErr);
-          return NextResponse.json({ error: "Malformed JSON schema returned by AI gateway" }, { status: 422 });
+          return NextResponse.json(
+            { error: "Malformed JSON schema returned by AI gateway" },
+            { status: 422 },
+          );
         }
       }
 
       // 5. Expand V2.4 compact keys if needed, then post-process
-      const expandedJson = (resultJson && typeof resultJson === "object" && CompactKeyMapper.isCompactFormat(resultJson as Record<string, unknown>))
-        ? CompactKeyMapper.expand(resultJson as Record<string, unknown>)
-        : resultJson;
+      const expandedJson =
+        resultJson &&
+        typeof resultJson === "object" &&
+        CompactKeyMapper.isCompactFormat(resultJson as Record<string, unknown>)
+          ? CompactKeyMapper.expand(resultJson as Record<string, unknown>)
+          : resultJson;
 
       // 6. Live Web Source Discovery (for plagiarism checks): query live web & repositories
       let liveWebCandidates: any[] = [];
-      if (analysisType === "plagiarism" || analysisType === "plagiarism-check") {
+      if (
+        analysisType === "plagiarism" ||
+        analysisType === "plagiarism-check"
+      ) {
         try {
           liveWebCandidates = await WebPlagiarismMatcher.searchWebSources(text);
         } catch (searchErr) {
@@ -228,7 +263,7 @@ export async function POST(req: Request) {
         `req-api-${Date.now().toString(36)}`,
         providerRequestId,
         model,
-        liveWebCandidates
+        liveWebCandidates,
       );
       const t5 = Date.now();
       const postProcessingTimeMs = t5 - t4;
@@ -236,13 +271,23 @@ export async function POST(req: Request) {
       // Development-only forensic timing logs
       if (process.env.NODE_ENV === "development") {
         console.debug("=========================================");
-        console.debug(`OLLIMA FORENSIC PIPELINE STATS (Model: ${model}, Prompt Version: ${promptVersion})`);
+        console.debug(
+          `OLLIMA FORENSIC PIPELINE STATS (Model: ${model}, Prompt Version: ${promptVersion})`,
+        );
         console.debug(`- Prompt Build Time:            ${promptBuildTimeMs}ms`);
         console.debug(`- LLM Streaming Completion:     ${completionTimeMs}ms`);
-        console.debug(`- Validation & Scoring Engine:  ${postProcessingTimeMs}ms`);
-        console.debug(`- Total Server Execution Time:  ${promptBuildTimeMs + completionTimeMs + postProcessingTimeMs}ms`);
-        console.debug(`- AI Probability:               ${domainResult.scores.aiProbability.value}%`);
-        console.debug(`- Overall Originality:          ${domainResult.scores.overallOriginality.value}%`);
+        console.debug(
+          `- Validation & Scoring Engine:  ${postProcessingTimeMs}ms`,
+        );
+        console.debug(
+          `- Total Server Execution Time:  ${promptBuildTimeMs + completionTimeMs + postProcessingTimeMs}ms`,
+        );
+        console.debug(
+          `- AI Probability:               ${domainResult.scores.aiProbability.value}%`,
+        );
+        console.debug(
+          `- Overall Originality:          ${domainResult.scores.overallOriginality.value}%`,
+        );
         console.debug("=========================================");
       }
 
@@ -253,15 +298,17 @@ export async function POST(req: Request) {
     } catch (fetchErr) {
       clearTimeout(timeoutId);
       if (fetchErr instanceof Error && fetchErr.name === "AbortError") {
-        return NextResponse.json({ error: "Ollima API request timed out" }, { status: 504 });
+        return NextResponse.json(
+          { error: "Ollima API request timed out" },
+          { status: 504 },
+        );
       }
       throw fetchErr;
     }
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Internal Server Error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
-

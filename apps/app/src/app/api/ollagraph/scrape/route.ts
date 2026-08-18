@@ -12,8 +12,11 @@ export async function POST(req: Request) {
 
     if (!apiKey) {
       return NextResponse.json(
-        { error: "OllaGraph API Key not configured. Please set OLLAGRAPH_API_KEY in .env.local" },
-        { status: 400 }
+        {
+          error:
+            "OllaGraph API Key not configured. Please set OLLAGRAPH_API_KEY in .env.local",
+        },
+        { status: 400 },
       );
     }
 
@@ -21,7 +24,7 @@ export async function POST(req: Request) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`,
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({ url, extract: true }),
     });
@@ -29,7 +32,7 @@ export async function POST(req: Request) {
     if (!response.ok) {
       return NextResponse.json(
         { error: `OllaGraph scrape returned status code ${response.status}` },
-        { status: response.status }
+        { status: response.status },
       );
     }
 
@@ -38,7 +41,7 @@ export async function POST(req: Request) {
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Internal Server Error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

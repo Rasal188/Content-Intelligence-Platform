@@ -34,25 +34,29 @@ export const RecommendationsPanel: FC<RecommendationsPanelProps> = ({
                   {rec.title}
                 </h4>
                 <div className="flex flex-wrap items-center gap-1.5 shrink-0 mt-1 sm:mt-0">
-                  <span className={`rounded px-2 py-0.5 font-mono text-[9px] uppercase font-medium ring-1 ring-inset ${
-                    rec.priority === "high"
-                      ? "bg-red-500/10 text-red-600 ring-red-500/20 dark:text-red-400"
-                      : rec.priority === "medium"
-                        ? "bg-yellow-500/10 text-yellow-600 ring-yellow-500/20 dark:text-yellow-400"
-                        : "bg-green-500/10 text-green-600 ring-green-500/20 dark:text-green-400"
-                  }`}>
+                  <span
+                    className={`rounded px-2 py-0.5 font-mono text-[9px] uppercase font-medium ring-1 ring-inset ${
+                      rec.priority === "high"
+                        ? "bg-red-500/10 text-red-600 ring-red-500/20 dark:text-red-400"
+                        : rec.priority === "medium"
+                          ? "bg-yellow-500/10 text-yellow-600 ring-yellow-500/20 dark:text-yellow-400"
+                          : "bg-green-500/10 text-green-600 ring-green-500/20 dark:text-green-400"
+                    }`}
+                  >
                     {rec.priority} Priority
                   </span>
                   <span className="rounded bg-blue-500/10 ring-1 ring-inset ring-blue-500/20 px-2 py-0.5 font-mono text-[9px] uppercase font-medium text-blue-600 dark:text-blue-400">
                     {rec.category}
                   </span>
-                  <span className={`rounded px-2 py-0.5 font-mono text-[9px] uppercase font-medium ring-1 ring-inset ${
-                    rec.status === "applied"
-                      ? "bg-green-500/10 text-green-600 ring-green-500/20 dark:text-green-400"
-                      : rec.status === "dismissed"
-                        ? "bg-primary/10 text-primary/50 ring-primary/20"
-                        : "bg-secondary text-primary/60 ring-border"
-                  }`}>
+                  <span
+                    className={`rounded px-2 py-0.5 font-mono text-[9px] uppercase font-medium ring-1 ring-inset ${
+                      rec.status === "applied"
+                        ? "bg-green-500/10 text-green-600 ring-green-500/20 dark:text-green-400"
+                        : rec.status === "dismissed"
+                          ? "bg-primary/10 text-primary/50 ring-primary/20"
+                          : "bg-secondary text-primary/60 ring-border"
+                    }`}
+                  >
                     {rec.status}
                   </span>
                 </div>

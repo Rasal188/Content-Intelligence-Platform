@@ -43,10 +43,7 @@ export function RecentAnalysis({ jobs }: RecentAnalysisProps) {
           </thead>
           <tbody className="divide-y divide-border/50">
             {jobs.map((job) => (
-              <tr
-                key={job.id}
-                className="hover:bg-primary/5 transition-colors"
-              >
+              <tr key={job.id} className="hover:bg-primary/5 transition-colors">
                 <td className="px-4 py-3 font-medium text-primary">
                   {job.documentName}
                 </td>

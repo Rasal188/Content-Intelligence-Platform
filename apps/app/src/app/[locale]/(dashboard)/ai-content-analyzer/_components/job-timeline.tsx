@@ -6,7 +6,10 @@ interface JobTimelineProps {
   logs: JobLogItem[];
 }
 
-const LEVEL_ICON_MAP: Record<LogLevel, React.ComponentType<{ className?: string }>> = {
+const LEVEL_ICON_MAP: Record<
+  LogLevel,
+  React.ComponentType<{ className?: string }>
+> = {
   info: Info,
   success: CheckCircle2,
   warning: Clock,

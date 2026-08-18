@@ -1,5 +1,5 @@
-import type { AnalysisResultDomain } from "../_types/analysis-result.types";
 import type { HighlightRiskLevel } from "../_types/analysis-highlight.types";
+import type { AnalysisResultDomain } from "../_types/analysis-result.types";
 
 /**
  * UI Presentation ViewModel decoupling React UI components from internal domain models.
@@ -57,11 +57,15 @@ export class ResultViewModelService {
 
     const isEmpty = domain.document.wordCount === 0;
     const riskInfo = isEmpty
-      ? { label: "Not Audited", style: "bg-secondary text-primary/40 ring-border dark:text-primary/50" }
-      : (riskMap[domain.overallRiskLevel] || riskMap.low);
+      ? {
+          label: "Not Audited",
+          style:
+            "bg-secondary text-primary/40 ring-border dark:text-primary/50",
+        }
+      : riskMap[domain.overallRiskLevel] || riskMap.low;
 
-    const formatScore = (val: number) => val < 0 ? "--" : `${val}%`;
-    const formatConfidence = (val: number) => val < 0 ? "--" : `${val}%`;
+    const formatScore = (val: number) => (val < 0 ? "--" : `${val}%`);
+    const formatConfidence = (val: number) => (val < 0 ? "--" : `${val}%`);
 
     return {
       id: domain.id,
@@ -72,9 +76,15 @@ export class ResultViewModelService {
       riskBadgeColorStyle: riskInfo.style,
       originalityScoreText: formatScore(domain.scores.overallOriginality.value),
       aiScoreText: formatScore(domain.scores.aiProbability.value),
-      plagiarismScoreText: formatScore(domain.scores.plagiarismSimilarity.value),
-      confidencePercentText: formatConfidence(domain.scores.aiProbability.confidence),
-      readingTimeText: isEmpty ? "0 min read" : `~${domain.statistics.estimatedReadingTimeMinutes} min read`,
+      plagiarismScoreText: formatScore(
+        domain.scores.plagiarismSimilarity.value,
+      ),
+      confidencePercentText: formatConfidence(
+        domain.scores.aiProbability.confidence,
+      ),
+      readingTimeText: isEmpty
+        ? "0 min read"
+        : `~${domain.statistics.estimatedReadingTimeMinutes} min read`,
       isMockData: domain.metadata.isMockData,
       rawResult: domain,
     };

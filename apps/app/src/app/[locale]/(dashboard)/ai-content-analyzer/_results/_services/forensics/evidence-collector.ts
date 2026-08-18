@@ -36,12 +36,21 @@ export class EvidenceCollector {
           // V2.2 compact schema: LLM no longer emits indicator/severity/confidence — use safe defaults
           list.push({
             quote,
-            reason: typeof item.reason === "string" ? item.reason : "Forensic indicator trace match.",
-            indicator: typeof item.indicator === "string" ? item.indicator : indKey,
-            confidence: typeof item.confidence === "number" ? item.confidence : 70,
-            severity: (item.severity === "low" || item.severity === "medium" || item.severity === "high" || item.severity === "critical")
-              ? item.severity
-              : "low",
+            reason:
+              typeof item.reason === "string"
+                ? item.reason
+                : "Forensic indicator trace match.",
+            indicator:
+              typeof item.indicator === "string" ? item.indicator : indKey,
+            confidence:
+              typeof item.confidence === "number" ? item.confidence : 70,
+            severity:
+              item.severity === "low" ||
+              item.severity === "medium" ||
+              item.severity === "high" ||
+              item.severity === "critical"
+                ? item.severity
+                : "low",
           });
         }
       }
@@ -57,6 +66,8 @@ export class EvidenceCollector {
     }
 
     // Rank by confidence descending
-    return Array.from(uniqueMap.values()).sort((a, b) => b.confidence - a.confidence);
+    return Array.from(uniqueMap.values()).sort(
+      (a, b) => b.confidence - a.confidence,
+    );
   }
 }

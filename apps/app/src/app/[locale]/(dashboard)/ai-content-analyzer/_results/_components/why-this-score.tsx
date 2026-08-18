@@ -1,6 +1,6 @@
+import { Bot, CheckCircle2, FileText, Sparkles } from "lucide-react";
 import type { FC } from "react";
 import type { AnalysisResultDomain } from "../_types/analysis-result.types";
-import { Sparkles, Bot, FileText, CheckCircle2 } from "lucide-react";
 
 interface WhyThisScoreProps {
   rawResult: AnalysisResultDomain;
@@ -21,67 +21,109 @@ export const WhyThisScore: FC<WhyThisScoreProps> = ({ rawResult }) => {
   const notableAiReasons: string[] = [];
 
   const aiSignals = [
-    { key: "templateLanguage", label: "Template phrasing & structured transitions" },
-    { key: "sentencePredictability", label: "Uniform sentence predictability (low burstiness)" },
-    { key: "lexicalRepetition", label: "Repetitive lexical phrasing & token recycling" },
-    { key: "genericWording", label: "Broad, generic assertions without concrete specifics" },
-    { key: "confidenceInflation", label: "Overly authoritative hedging and tone inflation" },
+    {
+      key: "templateLanguage",
+      label: "Template phrasing & structured transitions",
+    },
+    {
+      key: "sentencePredictability",
+      label: "Uniform sentence predictability (low burstiness)",
+    },
+    {
+      key: "lexicalRepetition",
+      label: "Repetitive lexical phrasing & token recycling",
+    },
+    {
+      key: "genericWording",
+      label: "Broad, generic assertions without concrete specifics",
+    },
+    {
+      key: "confidenceInflation",
+      label: "Overly authoritative hedging and tone inflation",
+    },
   ];
 
   const humanSignals = [
-    { key: "personalExperience", label: "Authentic first-person narrative & episodic recall" },
-    { key: "humanImperfections", label: "Organic syntax irregularities & natural human phrasing" },
-    { key: "emotionalAuthenticity", label: "Nuanced emotional tone and creative expression" },
-    { key: "sentenceBurstiness", label: "Dynamic sentence length variance (high burstiness)" },
-    { key: "vocabularyDiversity", label: "Rich, context-specific vocabulary diversity" },
+    {
+      key: "personalExperience",
+      label: "Authentic first-person narrative & episodic recall",
+    },
+    {
+      key: "humanImperfections",
+      label: "Organic syntax irregularities & natural human phrasing",
+    },
+    {
+      key: "emotionalAuthenticity",
+      label: "Nuanced emotional tone and creative expression",
+    },
+    {
+      key: "sentenceBurstiness",
+      label: "Dynamic sentence length variance (high burstiness)",
+    },
+    {
+      key: "vocabularyDiversity",
+      label: "Rich, context-specific vocabulary diversity",
+    },
   ];
 
   if (aiScore > 35) {
     notableAiReasons.push(
       ...aiSignals
-        .filter(s => {
+        .filter((s) => {
           const metric = (aiForensics as any)[s.key];
-          return metric && typeof metric.score === "number" && metric.score > 40;
+          return (
+            metric && typeof metric.score === "number" && metric.score > 40
+          );
         })
         .slice(0, 2)
-        .map(s => s.label)
+        .map((s) => s.label),
     );
     if (notableAiReasons.length === 0) {
-      notableAiReasons.push("Formulaic phrasing and elevated structural predictability detected.");
+      notableAiReasons.push(
+        "Formulaic phrasing and elevated structural predictability detected.",
+      );
     }
   } else {
     notableAiReasons.push(
       ...humanSignals
-        .filter(s => {
+        .filter((s) => {
           const metric = (aiForensics as any)[s.key];
-          return metric && typeof metric.score === "number" && metric.score > 40;
+          return (
+            metric && typeof metric.score === "number" && metric.score > 40
+          );
         })
         .slice(0, 2)
-        .map(s => s.label)
+        .map((s) => s.label),
     );
     if (notableAiReasons.length === 0) {
-      notableAiReasons.push("Natural human linguistic variance and authentic narrative pacing.");
+      notableAiReasons.push(
+        "Natural human linguistic variance and authentic narrative pacing.",
+      );
     }
   }
 
   // Derive Originality insight
-  const originalityInsight = origScore > 65
-    ? "Document exhibits distinctive vocabulary choices and unique thematic development."
-    : origScore < 40
-      ? "Frequent use of standardized idioms, cliché phrases, and generalized templates."
-      : "Balanced mix of conventional phrasing and localized descriptive points.";
+  const originalityInsight =
+    origScore > 65
+      ? "Document exhibits distinctive vocabulary choices and unique thematic development."
+      : origScore < 40
+        ? "Frequent use of standardized idioms, cliché phrases, and generalized templates."
+        : "Balanced mix of conventional phrasing and localized descriptive points.";
 
   // Derive Similarity insight
-  const similarityInsight = simScore > 25
-    ? "Internal syntactic loops and recurring paragraph structures detected within the document."
-    : "Low internal repetition with clean structural variety throughout all sections.";
+  const similarityInsight =
+    simScore > 25
+      ? "Internal syntactic loops and recurring paragraph structures detected within the document."
+      : "Low internal repetition with clean structural variety throughout all sections.";
 
   return (
     <div className="rounded-lg border border-border/80 bg-secondary/20 p-5 space-y-4">
       <div className="flex items-center gap-2 border-b border-border/50 pb-3">
         <Sparkles className="h-4 w-4 text-primary/80" />
         <h3 className="text-sm font-semibold text-primary">Why this score?</h3>
-        <span className="text-[11px] text-primary/40">Key Forensic Evidence Points</span>
+        <span className="text-[11px] text-primary/40">
+          Key Forensic Evidence Points
+        </span>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
@@ -103,8 +145,13 @@ export const WhyThisScore: FC<WhyThisScoreProps> = ({ rawResult }) => {
           </div>
           {topSnippets.length > 0 && topSnippets[0] && (
             <div className="border-t border-border/40 pt-2 mt-2">
-              <span className="text-[10px] text-primary/40 block mb-1 uppercase tracking-wider">Observed Snippet</span>
-              <p className="text-[11px] italic text-primary/60 truncate" title={topSnippets[0].textSnippet}>
+              <span className="text-[10px] text-primary/40 block mb-1 uppercase tracking-wider">
+                Observed Snippet
+              </span>
+              <p
+                className="text-[11px] italic text-primary/60 truncate"
+                title={topSnippets[0].textSnippet}
+              >
                 "{topSnippets[0].textSnippet}"
               </p>
             </div>
@@ -118,12 +165,19 @@ export const WhyThisScore: FC<WhyThisScoreProps> = ({ rawResult }) => {
               <CheckCircle2 className="h-3.5 w-3.5 text-primary/70" />
               <span>Originality ({origScore}%)</span>
             </div>
-            <p className="text-primary/70 leading-relaxed">{originalityInsight}</p>
+            <p className="text-primary/70 leading-relaxed">
+              {originalityInsight}
+            </p>
           </div>
           {topSnippets.length > 1 && topSnippets[1] && (
             <div className="border-t border-border/40 pt-2 mt-2">
-              <span className="text-[10px] text-primary/40 block mb-1 uppercase tracking-wider">Notable Excerpt</span>
-              <p className="text-[11px] italic text-primary/60 truncate" title={topSnippets[1].textSnippet}>
+              <span className="text-[10px] text-primary/40 block mb-1 uppercase tracking-wider">
+                Notable Excerpt
+              </span>
+              <p
+                className="text-[11px] italic text-primary/60 truncate"
+                title={topSnippets[1].textSnippet}
+              >
                 "{topSnippets[1].textSnippet}"
               </p>
             </div>
@@ -137,10 +191,14 @@ export const WhyThisScore: FC<WhyThisScoreProps> = ({ rawResult }) => {
               <FileText className="h-3.5 w-3.5 text-primary/70" />
               <span>Similarity Risk ({simScore}%)</span>
             </div>
-            <p className="text-primary/70 leading-relaxed">{similarityInsight}</p>
+            <p className="text-primary/70 leading-relaxed">
+              {similarityInsight}
+            </p>
           </div>
           <div className="border-t border-border/40 pt-2 mt-2">
-            <span className="text-[10px] text-primary/40 block">Internal document structural check</span>
+            <span className="text-[10px] text-primary/40 block">
+              Internal document structural check
+            </span>
           </div>
         </div>
       </div>

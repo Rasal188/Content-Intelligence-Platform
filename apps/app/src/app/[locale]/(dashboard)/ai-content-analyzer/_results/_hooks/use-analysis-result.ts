@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { getResultBuilderService } from "../_services/result-builder.service";
 import {
-  getResultViewModelService,
   type ResultViewModel,
+  getResultViewModelService,
 } from "../_services/result-view-model.service";
 import type { AnalysisResultDomain } from "../_types/analysis-result.types";
 
@@ -19,7 +19,9 @@ export function useAnalysisResult(
   documentName?: string,
   textContent?: string,
 ) {
-  const [resultDomain, setResultDomain] = useState<AnalysisResultDomain | null>(null);
+  const [resultDomain, setResultDomain] = useState<AnalysisResultDomain | null>(
+    null,
+  );
   const [viewModel, setViewModel] = useState<ResultViewModel | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,12 +40,18 @@ export function useAnalysisResult(
     setError(null);
 
     try {
-      const domain = await builderService.buildResult(jobId, documentName, textContent);
+      const domain = await builderService.buildResult(
+        jobId,
+        documentName,
+        textContent,
+      );
       const vm = viewModelService.toViewModel(domain);
       setResultDomain(domain);
       setViewModel(vm);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load analysis result.");
+      setError(
+        err instanceof Error ? err.message : "Failed to load analysis result.",
+      );
     } finally {
       setIsLoading(false);
     }

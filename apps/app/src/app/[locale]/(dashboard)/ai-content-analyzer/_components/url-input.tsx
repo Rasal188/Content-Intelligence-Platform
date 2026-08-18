@@ -13,11 +13,7 @@ interface UrlInputProps {
 /**
  * Web URL string input tab component with state feedback.
  */
-export function UrlInput({
-  value,
-  onChange,
-  disabled = false,
-}: UrlInputProps) {
+export function UrlInput({ value, onChange, disabled = false }: UrlInputProps) {
   const isUrlValid = value.length > 0 ? isValidUrl(value) : false;
 
   return (
@@ -57,10 +53,14 @@ export function UrlInput({
         {value.length > 0 && (
           <span
             className={`font-medium ${
-              isUrlValid ? "text-green-600 dark:text-green-400" : "text-yellow-600 dark:text-yellow-400"
+              isUrlValid
+                ? "text-green-600 dark:text-green-400"
+                : "text-yellow-600 dark:text-yellow-400"
             }`}
           >
-            {isUrlValid ? "Valid web address" : "Enter a complete http:// or https:// URL"}
+            {isUrlValid
+              ? "Valid web address"
+              : "Enter a complete http:// or https:// URL"}
           </span>
         )}
       </div>

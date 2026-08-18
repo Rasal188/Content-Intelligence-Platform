@@ -1,5 +1,5 @@
-import type { AnalysisResultDomain } from "../../_types/analysis-result.types";
 import type { HighlightRiskLevel } from "../../_types/analysis-highlight.types";
+import type { AnalysisResultDomain } from "../../_types/analysis-result.types";
 import type { AnalysisWarning } from "../../_types/analysis-warning.types";
 
 /**
@@ -15,14 +15,14 @@ export interface IResultProvider {
     jobId: string,
     documentName: string,
     textContent?: string,
-    requestId?: string
+    requestId?: string,
   ): Promise<AnalysisResultDomain>;
 }
 
 /**
  * Deterministic mock result provider generating realistic test payload datasets
  * derived from document characteristics and rules.
- * 
+ *
  * TODO: Integrate real providers. Example extension points:
  * - GeminiProvider: Call Google Gemini API for pattern identification
  * - OpenAIProvider: Call GPT models for risk detection
@@ -40,7 +40,7 @@ export class MockResultProvider implements IResultProvider {
   async generateResult(
     jobId: string,
     documentName: string,
-    textContent: string = "",
+    textContent = "",
     requestId?: string,
   ): Promise<AnalysisResultDomain> {
     const trimmedText = textContent.trim();
@@ -50,20 +50,30 @@ export class MockResultProvider implements IResultProvider {
     const charCount = textContent.length;
     const words = isEmpty ? [] : trimmedText.split(/\s+/).filter(Boolean);
     const wordCount = words.length;
-    const paragraphs = isEmpty ? [] : trimmedText.split(/\n+/).filter(p => p.trim().length > 0);
+    const paragraphs = isEmpty
+      ? []
+      : trimmedText.split(/\n+/).filter((p) => p.trim().length > 0);
     const paragraphCount = paragraphs.length;
-    
+
     // Split sentences using standard punctuation marks
-    const sentences = isEmpty ? [] : trimmedText.split(/[.!?]+/).filter(s => s.trim().length > 0);
+    const sentences = isEmpty
+      ? []
+      : trimmedText.split(/[.!?]+/).filter((s) => s.trim().length > 0);
     const sentenceCount = sentences.length;
 
     const avgSentenceLength = sentenceCount > 0 ? wordCount / sentenceCount : 0;
-    const estimatedReadingTime = Math.max(isEmpty ? 0 : 1, Math.ceil(wordCount / 200));
+    const estimatedReadingTime = Math.max(
+      isEmpty ? 0 : 1,
+      Math.ceil(wordCount / 200),
+    );
 
     // Calculate unique words for vocabulary diversity
-    const uniqueWords = new Set(words.map(w => w.toLowerCase().replace(/[^a-z0-9]/g, "")));
+    const uniqueWords = new Set(
+      words.map((w) => w.toLowerCase().replace(/[^a-z0-9]/g, "")),
+    );
     const uniqueWordCount = uniqueWords.size;
-    const vocabularyDiversity = wordCount > 0 ? Math.round((uniqueWordCount / wordCount) * 100) : 0;
+    const vocabularyDiversity =
+      wordCount > 0 ? Math.round((uniqueWordCount / wordCount) * 100) : 0;
 
     // Calculate syllables and readability index (Flesch Reading Ease approximation)
     let totalSyllables = 0;
@@ -74,7 +84,8 @@ export class MockResultProvider implements IResultProvider {
     let readabilityScore = 0;
     if (wordCount > 0 && sentenceCount > 0) {
       // Flesch Reading Ease Score
-      const rawReadability = 206.835 - 1.015 * avgSentenceLength - 84.6 * avgSyllablesPerWord;
+      const rawReadability =
+        206.835 - 1.015 * avgSentenceLength - 84.6 * avgSyllablesPerWord;
       readabilityScore = Math.min(100, Math.max(0, Math.round(rawReadability)));
     }
 
@@ -84,16 +95,35 @@ export class MockResultProvider implements IResultProvider {
     let calculatedConfidence = -1; // Sentinel for disabled/empty
     if (!isEmpty) {
       // Base confidence 55, scales up to 99 with word count & sentence diversity
-      const wordScore = Math.min(30, (wordCount / 15)); // max 30 points at 450 words
+      const wordScore = Math.min(30, wordCount / 15); // max 30 points at 450 words
       const paragraphScore = Math.min(10, paragraphCount * 2); // max 10 points at 5 paragraphs
       const completenessScore = sentenceCount > 3 ? 4 : 0;
-      calculatedConfidence = Math.min(99, Math.max(50, Math.round(55 + wordScore + paragraphScore + completenessScore)));
+      calculatedConfidence = Math.min(
+        99,
+        Math.max(
+          50,
+          Math.round(55 + wordScore + paragraphScore + completenessScore),
+        ),
+      );
     }
 
     // 3. Deterministic Mock Values
     // Check for typical LLM pattern indicators (e.g. buzzwords)
-    const buzzwords = ["furthermore", "moreover", "in conclusion", "testament", "delve", "pivotal", "tapestry", "demystify", "beacon", "catalyst"];
-    const buzzCount = words.filter(w => buzzwords.includes(w.toLowerCase())).length;
+    const buzzwords = [
+      "furthermore",
+      "moreover",
+      "in conclusion",
+      "testament",
+      "delve",
+      "pivotal",
+      "tapestry",
+      "demystify",
+      "beacon",
+      "catalyst",
+    ];
+    const buzzCount = words.filter((w) =>
+      buzzwords.includes(w.toLowerCase()),
+    ).length;
     const buzzRatio = wordCount > 0 ? buzzCount / wordCount : 0;
 
     let aiVal = -1;
@@ -102,9 +132,15 @@ export class MockResultProvider implements IResultProvider {
 
     if (!isEmpty) {
       // Deterministic calculations based on content traits and hash
-      aiVal = Math.min(98, Math.max(2, Math.round((buzzRatio * 200) + (hashNum % 30) + 5)));
+      aiVal = Math.min(
+        98,
+        Math.max(2, Math.round(buzzRatio * 200 + (hashNum % 30) + 5)),
+      );
       origVal = 100 - aiVal;
-      plagVal = Math.min(100, Math.max(0, Math.round(((hashNum % 7) + (wordCount % 5)) * 1.5)));
+      plagVal = Math.min(
+        100,
+        Math.max(0, Math.round(((hashNum % 7) + (wordCount % 5)) * 1.5)),
+      );
     }
 
     let riskLevel: HighlightRiskLevel = "low";
@@ -117,16 +153,18 @@ export class MockResultProvider implements IResultProvider {
       {
         id: "warn-transparency",
         code: "DEV_MODE_MOCK",
-        message: "Development Mode: Results generated by Mock Rule Engine using deterministic rules. No AI model or external provider was used.",
+        message:
+          "Development Mode: Results generated by Mock Rule Engine using deterministic rules. No AI model or external provider was used.",
         severity: "info",
-      }
+      },
     ];
 
     if (isEmpty) {
       warningsList.unshift({
         id: "warn-empty-doc",
         code: "EMPTY_DOCUMENT",
-        message: "The submitted document is empty or contains no readable text content. Analysis metrics are disabled.",
+        message:
+          "The submitted document is empty or contains no readable text content. Analysis metrics are disabled.",
         severity: "error" as const,
       });
     }
@@ -154,7 +192,8 @@ export class MockResultProvider implements IResultProvider {
           value: origVal,
           confidence: Math.max(65, Math.min(95, calculatedConfidence + 4)),
           weight: 1.0,
-          description: "Estimated originality based on linguistic and structural analysis.",
+          description:
+            "Estimated originality based on linguistic and structural analysis.",
         },
         aiProbability: {
           id: "score-ai",
@@ -162,7 +201,8 @@ export class MockResultProvider implements IResultProvider {
           value: aiVal,
           confidence: calculatedConfidence,
           weight: 1.0,
-          description: "Estimated likelihood that the writing exhibits AI-generated characteristics.",
+          description:
+            "Estimated likelihood that the writing exhibits AI-generated characteristics.",
         },
         plagiarismSimilarity: {
           id: "score-plag",
@@ -170,7 +210,8 @@ export class MockResultProvider implements IResultProvider {
           value: plagVal,
           confidence: Math.max(60, Math.min(92, calculatedConfidence - 3)),
           weight: 0.8,
-          description: "Estimated similarity risk from linguistic and structural analysis.",
+          description:
+            "Estimated similarity risk from linguistic and structural analysis.",
         },
         readabilityQuality: {
           id: "score-read",
@@ -189,7 +230,9 @@ export class MockResultProvider implements IResultProvider {
         readabilityScore: isEmpty ? -1 : readabilityScore,
         estimatedReadingTimeMinutes: estimatedReadingTime,
         vocabularyDiversityPercent: vocabularyDiversity,
-        averageSentenceLengthWords: parseFloat(avgSentenceLength.toFixed(1)),
+        averageSentenceLengthWords: Number.parseFloat(
+          avgSentenceLength.toFixed(1),
+        ),
         language: "English",
       },
       metadata: {
@@ -200,53 +243,67 @@ export class MockResultProvider implements IResultProvider {
         executionTimeMs: isEmpty ? 10 : 850 + (hashNum % 300),
         generatedAt: new Date().toISOString(),
         checksum: `chk-${hashNum}-deterministic`,
-        processingTimeSeconds: isEmpty ? 0.01 : parseFloat(((850 + (hashNum % 300)) / 1000).toFixed(2)),
+        processingTimeSeconds: isEmpty
+          ? 0.01
+          : Number.parseFloat(((850 + (hashNum % 300)) / 1000).toFixed(2)),
         isMockData: true,
-        requestId: requestId || `req-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+        requestId:
+          requestId ||
+          `req-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
       },
-      highlights: isEmpty ? [] : [
-        {
-          id: "hl-1",
-          startIndex: 0,
-          endIndex: Math.min(120, charCount),
-          textSnippet: textContent.slice(0, 120),
-          probability: aiVal + (hashNum % 10),
-          riskLevel: riskLevel,
-          reason: buzzCount > 0 
-            ? `LLM transition phrases like "${buzzwords.find(w => textContent.toLowerCase().includes(w))}" detected in text.`
-            : "Repetitive sentence structures and low perplexity observed.",
-        },
-      ],
-      matchedSources: isEmpty ? [] : [
-        {
-          id: "src-1",
-          sourceTitle: "Academic Research Archive & Data Index",
-          sourceUrl: "https://example.com/research-archive",
-          similarityPercent: plagVal,
-          matchedSnippet: textContent.slice(0, 50),
-          originalSnippet: "Direct matches found in indexed publications database.",
-          publication: "Journal of Modern Content Analysis",
-          author: "Dr. Elizabeth Vance",
-        },
-      ],
-      recommendations: isEmpty ? [] : [
-        {
-          id: "rec-1",
-          category: "quality",
-          title: "Vary Sentence Length",
-          description: "Varying sentence structures improves readability and reduces artificial pattern scores.",
-          priority: "medium",
-          status: "pending",
-        },
-        {
-          id: "rec-2",
-          category: "citation",
-          title: "Add Source Citation",
-          description: "Ensure references to external statistics include direct citations.",
-          priority: "low",
-          status: "pending",
-        },
-      ],
+      highlights: isEmpty
+        ? []
+        : [
+            {
+              id: "hl-1",
+              startIndex: 0,
+              endIndex: Math.min(120, charCount),
+              textSnippet: textContent.slice(0, 120),
+              probability: aiVal + (hashNum % 10),
+              riskLevel: riskLevel,
+              reason:
+                buzzCount > 0
+                  ? `LLM transition phrases like "${buzzwords.find((w) => textContent.toLowerCase().includes(w))}" detected in text.`
+                  : "Repetitive sentence structures and low perplexity observed.",
+            },
+          ],
+      matchedSources: isEmpty
+        ? []
+        : [
+            {
+              id: "src-1",
+              sourceTitle: "Academic Research Archive & Data Index",
+              sourceUrl: "https://example.com/research-archive",
+              similarityPercent: plagVal,
+              matchedSnippet: textContent.slice(0, 50),
+              originalSnippet:
+                "Direct matches found in indexed publications database.",
+              publication: "Journal of Modern Content Analysis",
+              author: "Dr. Elizabeth Vance",
+            },
+          ],
+      recommendations: isEmpty
+        ? []
+        : [
+            {
+              id: "rec-1",
+              category: "quality",
+              title: "Vary Sentence Length",
+              description:
+                "Varying sentence structures improves readability and reduces artificial pattern scores.",
+              priority: "medium",
+              status: "pending",
+            },
+            {
+              id: "rec-2",
+              category: "citation",
+              title: "Add Source Citation",
+              description:
+                "Ensure references to external statistics include direct citations.",
+              priority: "low",
+              status: "pending",
+            },
+          ],
       warnings: warningsList,
       extensions: {},
     };

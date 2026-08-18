@@ -23,11 +23,14 @@ export class OllimaResultProvider implements IAnalysisProvider {
   public async analyze(
     jobId: string,
     documentName: string,
-    textContent: string = "",
-    requestId: string = `req-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-    analysisType?: string
+    textContent = "",
+    requestId = `req-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+    analysisType?: string,
   ): Promise<AnalysisResultDomain> {
-    const runAnalysisCall = async (): Promise<{ providerRequestId?: string; result: unknown }> => {
+    const runAnalysisCall = async (): Promise<{
+      providerRequestId?: string;
+      result: unknown;
+    }> => {
       const response = await fetch("/api/ollima/analyze", {
         method: "POST",
         headers: {
@@ -42,11 +45,15 @@ export class OllimaResultProvider implements IAnalysisProvider {
       });
 
       if (!response.ok) {
-        const errData = (await response.json().catch(() => ({}))) as Record<string, unknown>;
-        const errMsg = typeof errData.error === "string" 
-          ? errData.error 
-          : `Ollima API error with status: ${response.status}`;
-        
+        const errData = (await response.json().catch(() => ({}))) as Record<
+          string,
+          unknown
+        >;
+        const errMsg =
+          typeof errData.error === "string"
+            ? errData.error
+            : `Ollima API error with status: ${response.status}`;
+
         throw {
           status: response.status,
           message: errMsg,
@@ -62,8 +69,11 @@ export class OllimaResultProvider implements IAnalysisProvider {
       attemptData = await runAnalysisCall();
     } catch (err) {
       const rErr = err as RetriableError;
-      if (rErr && rErr.isRetriable) {
-        console.warn("JSON parsing failure on server. Retrying once...", rErr.message);
+      if (rErr?.isRetriable) {
+        console.warn(
+          "JSON parsing failure on server. Retrying once...",
+          rErr.message,
+        );
         attemptData = await runAnalysisCall();
       } else {
         throw new Error(rErr?.message || "Ollima API analysis request failed.");

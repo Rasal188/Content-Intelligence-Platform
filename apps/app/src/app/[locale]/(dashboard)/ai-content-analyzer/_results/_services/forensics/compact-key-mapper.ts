@@ -13,39 +13,73 @@
  */
 
 const AF_MAP: Record<string, string> = {
-  sB: "sentenceBurstiness", sP: "sentencePredictability", lR: "lexicalRepetition",
-  vD: "vocabularyDiversity", tO: "transitionOveruse", pR: "paragraphRhythm",
-  sS: "sentenceStructureRepetition", tL: "templateLanguage", gW: "genericWording",
-  cI: "confidenceInflation", iD: "informationDensity", hL: "hedgingLanguage",
-  sC: "stylisticConsistency", nA: "narrativeAuthenticity", pE: "personalExperience",
-  eA: "emotionalAuthenticity", cr: "creativity", hi: "humanImperfections",
-  cs: "contextSwitching", ha: "hallucinationIndicators",
+  sB: "sentenceBurstiness",
+  sP: "sentencePredictability",
+  lR: "lexicalRepetition",
+  vD: "vocabularyDiversity",
+  tO: "transitionOveruse",
+  pR: "paragraphRhythm",
+  sS: "sentenceStructureRepetition",
+  tL: "templateLanguage",
+  gW: "genericWording",
+  cI: "confidenceInflation",
+  iD: "informationDensity",
+  hL: "hedgingLanguage",
+  sC: "stylisticConsistency",
+  nA: "narrativeAuthenticity",
+  pE: "personalExperience",
+  eA: "emotionalAuthenticity",
+  cr: "creativity",
+  hi: "humanImperfections",
+  cs: "contextSwitching",
+  ha: "hallucinationIndicators",
 };
 
 const OE_MAP: Record<string, string> = {
-  sp: "specificity", uW: "uniqueWording", lD: "lexicalDiversity",
-  cO: "concreteObservations", oE: "originalExamples", bp: "boilerplate",
-  mL: "marketingLanguage", eF: "educationalFiller", cc: "commonCliches",
+  sp: "specificity",
+  uW: "uniqueWording",
+  lD: "lexicalDiversity",
+  cO: "concreteObservations",
+  oE: "originalExamples",
+  bp: "boilerplate",
+  mL: "marketingLanguage",
+  eF: "educationalFiller",
+  cc: "commonCliches",
   gE: "genericExplanations",
 };
 
 const SA_MAP: Record<string, string> = {
-  rW: "repeatedWording", rP: "repeatedPhrases", rPa: "repeatedParagraphs",
-  rE: "repeatedExplanations", tR: "templateReuse", fI: "formattingInconsistencies",
-  aS: "abruptStyleShifts", rU: "repeatedUncommonTerminology",
+  rW: "repeatedWording",
+  rP: "repeatedPhrases",
+  rPa: "repeatedParagraphs",
+  rE: "repeatedExplanations",
+  tR: "templateReuse",
+  fI: "formattingInconsistencies",
+  aS: "abruptStyleShifts",
+  rU: "repeatedUncommonTerminology",
 };
 
 const WQ_MAP: Record<string, string> = {
-  gr: "grammar", re: "readability", fl: "flow", or: "organization",
-  vo: "vocabulary", to: "tone", pQ: "paragraphQuality", sV: "sentenceVariety",
-  aQ: "argumentQuality", eu: "evidenceUsage",
+  gr: "grammar",
+  re: "readability",
+  fl: "flow",
+  or: "organization",
+  vo: "vocabulary",
+  to: "tone",
+  pQ: "paragraphQuality",
+  sV: "sentenceVariety",
+  aQ: "argumentQuality",
+  eu: "evidenceUsage",
 };
 
-const SECTION_MAP: Record<string, { fullKey: string; keyMap: Record<string, string> }> = {
-  af: { fullKey: "aiForensics",      keyMap: AF_MAP },
+const SECTION_MAP: Record<
+  string,
+  { fullKey: string; keyMap: Record<string, string> }
+> = {
+  af: { fullKey: "aiForensics", keyMap: AF_MAP },
   oe: { fullKey: "originalExpression", keyMap: OE_MAP },
   sa: { fullKey: "similarityAnalysis", keyMap: SA_MAP },
-  wq: { fullKey: "writingQuality",    keyMap: WQ_MAP },
+  wq: { fullKey: "writingQuality", keyMap: WQ_MAP },
 };
 
 export class CompactKeyMapper {
@@ -70,10 +104,13 @@ export class CompactKeyMapper {
     };
 
     // Expand each short section
-    for (const [shortSection, { fullKey, keyMap }] of Object.entries(SECTION_MAP)) {
-      const section = (raw[shortSection] && typeof raw[shortSection] === "object")
-        ? raw[shortSection] as Record<string, unknown>
-        : {};
+    for (const [shortSection, { fullKey, keyMap }] of Object.entries(
+      SECTION_MAP,
+    )) {
+      const section =
+        raw[shortSection] && typeof raw[shortSection] === "object"
+          ? (raw[shortSection] as Record<string, unknown>)
+          : {};
 
       for (const [shortKey, score] of Object.entries(section)) {
         const fullIndicator = keyMap[shortKey];
@@ -86,7 +123,9 @@ export class CompactKeyMapper {
     }
 
     // Distribute flat evidence items to their parent indicator objects
-    const evArray = Array.isArray(raw.ev) ? raw.ev as Array<Record<string, unknown>> : [];
+    const evArray = Array.isArray(raw.ev)
+      ? (raw.ev as Array<Record<string, unknown>>)
+      : [];
     for (const evItem of evArray) {
       const key = typeof evItem.k === "string" ? evItem.k : "";
       const quote = typeof evItem.q === "string" ? evItem.q.trim() : "";
@@ -102,11 +141,18 @@ export class CompactKeyMapper {
 
       const parentSection = result[sectionDef.fullKey];
       if (!parentSection) continue;
-      const target = parentSection[fullIndicator] as Record<string, unknown> | undefined;
+      const target = parentSection[fullIndicator] as
+        | Record<string, unknown>
+        | undefined;
       if (!target || typeof target !== "object") continue;
 
-      const existingEvidence = Array.isArray((target as any).evidence) ? (target as any).evidence : [];
-      (target as any).evidence = [...existingEvidence, { quote, reason: "Notable forensic trace." }];
+      const existingEvidence = Array.isArray((target as any).evidence)
+        ? (target as any).evidence
+        : [];
+      (target as any).evidence = [
+        ...existingEvidence,
+        { quote, reason: "Notable forensic trace." },
+      ];
     }
 
     return result;

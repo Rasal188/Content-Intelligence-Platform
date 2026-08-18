@@ -26,7 +26,8 @@ export const ConfidenceCard: FC<ConfidenceCardProps> = ({
           </span>
         </div>
         <p className="text-xs text-primary/50">
-          Evaluated against forensic linguistic patterns, syntax burstiness, and structural consistency.
+          Evaluated against forensic linguistic patterns, syntax burstiness, and
+          structural consistency.
         </p>
       </div>
     </div>

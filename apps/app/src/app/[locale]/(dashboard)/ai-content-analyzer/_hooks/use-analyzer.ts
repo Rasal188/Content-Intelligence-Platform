@@ -51,7 +51,9 @@ export function useAnalyzer() {
 
   const runAnalysis = () => {
     if (activeJob) {
-      setValidationError("An analysis job is already active. Please wait or cancel it first.");
+      setValidationError(
+        "An analysis job is already active. Please wait or cancel it first.",
+      );
       return;
     }
     setValidationError(null);

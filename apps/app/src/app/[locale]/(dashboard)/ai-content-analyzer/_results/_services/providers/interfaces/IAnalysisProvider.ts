@@ -9,6 +9,6 @@ export interface IAnalysisProvider {
     documentName: string,
     textContent: string,
     requestId?: string,
-    analysisType?: string
+    analysisType?: string,
   ): Promise<AnalysisResultDomain>;
 }

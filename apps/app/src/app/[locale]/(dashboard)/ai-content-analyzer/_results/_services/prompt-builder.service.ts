@@ -12,7 +12,10 @@ export class PromptBuilderService {
    * @param textContent The document text to analyze.
    * @returns System and User prompt strings.
    */
-  public static buildPrompt(version: string, textContent: string): { system: string; user: string } {
+  public static buildPrompt(
+    version: string,
+    textContent: string,
+  ): { system: string; user: string } {
     if (version === "v1") {
       const userPrompt = `Analyze the following document text:
 ---
@@ -22,13 +25,13 @@ ${textContent}
         system: SYSTEM_PROMPT_V1,
         user: userPrompt,
       };
-    } else if (version === "v2") {
+    }
+    if (version === "v2") {
       return {
         system: SYSTEM_PROMPT_V2,
         user: USER_PROMPT_V2(textContent),
       };
-    } else {
-      throw new Error(`Unsupported prompt version: ${version}`);
     }
+    throw new Error(`Unsupported prompt version: ${version}`);
   }
 }

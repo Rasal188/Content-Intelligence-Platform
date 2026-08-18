@@ -21,4 +21,3 @@ export interface AnalysisScores {
   plagiarismSimilarity: AnalysisScore;
   readabilityQuality: AnalysisScore;
 }
-

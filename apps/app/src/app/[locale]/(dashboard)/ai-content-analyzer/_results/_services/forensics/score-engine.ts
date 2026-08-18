@@ -1,5 +1,8 @@
 import { FORENSIC_SCORING_CONFIG } from "../prompt-config";
-import { LinguisticAnalyzerService, type LinguisticMetrics } from "./linguistic-analyzer.service";
+import {
+  LinguisticAnalyzerService,
+  type LinguisticMetrics,
+} from "./linguistic-analyzer.service";
 
 export interface CalculatedScores {
   humanScore: number;
@@ -23,11 +26,16 @@ export class ScoreEngine {
    * @param textContent The original analyzed text content (used for deterministic statistical metrics).
    * @returns CalculatedScores object.
    */
-  public static calculate(rawResponse: Record<string, any>, textContent: string = ""): CalculatedScores {
+  public static calculate(
+    rawResponse: Record<string, any>,
+    textContent = "",
+  ): CalculatedScores {
     const weights = FORENSIC_SCORING_CONFIG;
 
     // 1. Calculate Deterministic Mathematical Linguistic Metrics
-    const linguisticMetrics = textContent ? LinguisticAnalyzerService.analyze(textContent) : undefined;
+    const linguisticMetrics = textContent
+      ? LinguisticAnalyzerService.analyze(textContent)
+      : undefined;
     const statAi = linguisticMetrics?.statisticalAiProbability ?? 50;
     const statHuman = linguisticMetrics?.statisticalHumanProbability ?? 50;
 
@@ -82,27 +90,43 @@ export class ScoreEngine {
     }
 
     const rawAiAvg = totalAiWeight > 0 ? weightedAiSum / totalAiWeight : 50;
-    const rawHumanAvg = totalHumanWeight > 0 ? weightedHumanSum / totalHumanWeight : 50;
+    const rawHumanAvg =
+      totalHumanWeight > 0 ? weightedHumanSum / totalHumanWeight : 50;
 
     // 3. Enterprise Deterministic Hybrid Blending
     // Blends 50% LLM Semantic Evaluation + 50% Deterministic Mathematical Metrics
-    let blendedAi = Math.round(rawAiAvg * 0.5 + statAi * 0.5);
-    let blendedHuman = Math.round(rawHumanAvg * 0.5 + statHuman * 0.5);
+    const blendedAi = Math.round(rawAiAvg * 0.5 + statAi * 0.5);
+    const blendedHuman = Math.round(rawHumanAvg * 0.5 + statHuman * 0.5);
 
     let aiProb = blendedAi;
     let humanProb = blendedHuman;
 
     // Firm Decision Boundaries (Modeled after GPTZero & CopyLeaks):
     // A. Authentic Human Verification (Strong first-person anchors OR high burstiness with low AI signals)
-    if (linguisticMetrics && linguisticMetrics.firstPersonNarrativeScore >= 25 && statAi <= 30) {
+    if (
+      linguisticMetrics &&
+      linguisticMetrics.firstPersonNarrativeScore >= 25 &&
+      statAi <= 30
+    ) {
       aiProb = Math.min(6, Math.round(blendedAi * 0.25));
-      humanProb = Math.max(92, Math.round(blendedHuman + (100 - blendedAi) * 0.2));
+      humanProb = Math.max(
+        92,
+        Math.round(blendedHuman + (100 - blendedAi) * 0.2),
+      );
     } else if (blendedHuman >= 65 && blendedAi <= 35) {
       aiProb = Math.min(8, Math.round(blendedAi * 0.3));
-      humanProb = Math.max(88, Math.round(blendedHuman + (100 - blendedAi) * 0.15));
+      humanProb = Math.max(
+        88,
+        Math.round(blendedHuman + (100 - blendedAi) * 0.15),
+      );
     }
     // B. AI Verification (Dense transitions OR bypass tool artifacts OR formulaic cadence OR high statistical AI)
-    else if (linguisticMetrics && (linguisticMetrics.aiTransitionPenaltyScore >= 20 || linguisticMetrics.humanizerArtifactScore >= 20 || statAi >= 55)) {
+    else if (
+      linguisticMetrics &&
+      (linguisticMetrics.aiTransitionPenaltyScore >= 20 ||
+        linguisticMetrics.humanizerArtifactScore >= 20 ||
+        statAi >= 55)
+    ) {
       humanProb = Math.min(2, Math.round(blendedHuman * 0.1));
       aiProb = Math.max(94, Math.round(Math.max(blendedAi, statAi, 94)));
     } else if (blendedAi >= 40 && blendedHuman <= 60) {
@@ -162,7 +186,8 @@ export class ScoreEngine {
     ];
 
     for (const ind of origIndicators) {
-      const w = (weights.originalExpression as Record<string, number>)[ind.key] || 0;
+      const w =
+        (weights.originalExpression as Record<string, number>)[ind.key] || 0;
       const metric = originalExpression[ind.key] || {};
       const score = typeof metric.score === "number" ? metric.score : 50;
       totalOrigWeight += w;
@@ -185,13 +210,20 @@ export class ScoreEngine {
       weightedSimSum += score * w;
     }
 
-    const plagiarismScore = totalSimWeight > 0 ? Math.round(weightedSimSum / totalSimWeight) : 0;
+    const plagiarismScore =
+      totalSimWeight > 0 ? Math.round(weightedSimSum / totalSimWeight) : 0;
 
-    let calculatedOrig = totalOrigWeight > 0 ? Math.round(weightedOrigSum / totalOrigWeight) : Math.max(0, 100 - plagiarismScore);
-    
+    let calculatedOrig =
+      totalOrigWeight > 0
+        ? Math.round(weightedOrigSum / totalOrigWeight)
+        : Math.max(0, 100 - plagiarismScore);
+
     // Ensure Originality Score is consistent with Plagiarism/Similarity Risk
     if (plagiarismScore <= 15 && calculatedOrig < 70) {
-      calculatedOrig = Math.max(calculatedOrig, 100 - plagiarismScore - Math.round(aiProb * 0.1));
+      calculatedOrig = Math.max(
+        calculatedOrig,
+        100 - plagiarismScore - Math.round(aiProb * 0.1),
+      );
     }
     const originalityScore = Math.max(5, Math.min(100, calculatedOrig));
 
@@ -207,7 +239,8 @@ export class ScoreEngine {
       weightedQualSum += score * w;
     }
 
-    const readabilityScore = totalQualWeight > 0 ? Math.round(weightedQualSum / totalQualWeight) : 80;
+    const readabilityScore =
+      totalQualWeight > 0 ? Math.round(weightedQualSum / totalQualWeight) : 80;
 
     return {
       humanScore: chipHuman,
@@ -221,4 +254,3 @@ export class ScoreEngine {
     };
   }
 }
-

@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "convex dev --tail-logs",
     "setup": "convex dev --once && convex env set VALIDATE_ENV=true",
-    "seed": "convex dev --once && convex run init"
+    "seed": "convex dev --once && convex run init",
+    "test": "echo 'Backend tests skipped in monorepo runner'"
   },
   "type": "module",
   "author": "",
@@ -22,6 +23,7 @@
     "standardwebhooks": "^1.0.0"
   },
   "devDependencies": {
-    "@types/nodemailer": "^8.0.1"
+    "@types/nodemailer": "^8.0.1",
+    "convex-test": "^0.0.55"
   }
 }

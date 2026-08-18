@@ -22,7 +22,7 @@ export class SummaryGenerator {
     originalityScore: number,
     plagiarismScore: number,
     readabilityScore: number,
-    confidence: number
+    confidence: number,
   ): GeneratedSummary {
     const aiForensics = rawResponse.aiForensics || {};
     const originalExpression = rawResponse.originalExpression || {};
@@ -35,20 +35,32 @@ export class SummaryGenerator {
       { key: "sentencePredictability", label: "Highly Uniform Sentence Flow" },
       { key: "lexicalRepetition", label: "Repetitive Vocabulary Usage" },
       { key: "genericWording", label: "General Vague Statements" },
-      { key: "sentenceStructureRepetition", label: "Repetitive Sentence Openers" },
+      {
+        key: "sentenceStructureRepetition",
+        label: "Repetitive Sentence Openers",
+      },
       { key: "confidenceInflation", label: "Unnatural Certainty Clues" },
       { key: "transitionOveruse", label: "Mechanical Logical Connectors" },
       { key: "paragraphRhythm", label: "Monotonous Paragraph Layouts" },
       { key: "informationDensity", label: "Uniform Information Density" },
       { key: "hedgingLanguage", label: "Hedging Qualifiers Overuse" },
-      { key: "stylisticConsistency", label: "Unusually Uniform Stylistic Flow" },
+      {
+        key: "stylisticConsistency",
+        label: "Unusually Uniform Stylistic Flow",
+      },
       { key: "hallucinationIndicators", label: "Contradictory Logic Gaps" },
     ];
 
     const humanIndicators = [
-      { key: "personalExperience", label: "Direct Personal Anecdote Reference" },
+      {
+        key: "personalExperience",
+        label: "Direct Personal Anecdote Reference",
+      },
       { key: "humanImperfections", label: "Idiosyncratic Phrasing and Flaws" },
-      { key: "narrativeAuthenticity", label: "Natural Narrative Pacing shifts" },
+      {
+        key: "narrativeAuthenticity",
+        label: "Natural Narrative Pacing shifts",
+      },
       { key: "creativity", label: "Original Creative Metaphors" },
       { key: "emotionalAuthenticity", label: "Sincere Value Assertions" },
       { key: "sentenceBurstiness", label: "Organic Sentence Length Shifts" },
@@ -58,25 +70,31 @@ export class SummaryGenerator {
 
     // Find top AI signals based on score
     const topAISignals = aiIndicators
-      .map(ind => ({
+      .map((ind) => ({
         label: ind.label,
-        score: typeof aiForensics[ind.key]?.score === "number" ? aiForensics[ind.key].score : 0,
+        score:
+          typeof aiForensics[ind.key]?.score === "number"
+            ? aiForensics[ind.key].score
+            : 0,
       }))
       .sort((a, b) => b.score - a.score)
       .slice(0, 3)
-      .filter(x => x.score > 40)
-      .map(x => x.label);
+      .filter((x) => x.score > 40)
+      .map((x) => x.label);
 
     // Find top Human signals based on score
     const topHumanSignals = humanIndicators
-      .map(ind => ({
+      .map((ind) => ({
         label: ind.label,
-        score: typeof aiForensics[ind.key]?.score === "number" ? aiForensics[ind.key].score : 0,
+        score:
+          typeof aiForensics[ind.key]?.score === "number"
+            ? aiForensics[ind.key].score
+            : 0,
       }))
       .sort((a, b) => b.score - a.score)
       .slice(0, 3)
-      .filter(x => x.score > 40)
-      .map(x => x.label);
+      .filter((x) => x.score > 40)
+      .map((x) => x.label);
 
     // 2. Strengths and Weaknesses
     const strengthsList: string[] = [];
@@ -110,7 +128,10 @@ export class SummaryGenerator {
 
     // Add generic fallbacks if lists are empty
     if (strengthsList.length === 0) {
-      strengthsList.push("Clear text formatting layout", "Coherent terminology usage");
+      strengthsList.push(
+        "Clear text formatting layout",
+        "Coherent terminology usage",
+      );
     }
     if (weaknessesList.length === 0) {
       weaknessesList.push("Minor sentence length variation redundancy");
@@ -132,7 +153,8 @@ export class SummaryGenerator {
     }
 
     // Deduplicate lists
-    const uniqueList = (arr: string[]) => Array.from(new Set(arr)).filter(Boolean).slice(0, 4);
+    const uniqueList = (arr: string[]) =>
+      Array.from(new Set(arr)).filter(Boolean).slice(0, 4);
     const finalStrengths = uniqueList(strengthsList);
     const finalWeaknesses = uniqueList(weaknessesList);
 
@@ -141,20 +163,35 @@ export class SummaryGenerator {
       recommendationsList.push(
         "Vary vocabulary synonyms to enhance lexical diversity.",
         "Incorporate organic transitions and varied sentence lengths.",
-        "Introduce concrete descriptions and original examples."
+        "Introduce concrete descriptions and original examples.",
       );
     }
     const finalRecs = uniqueList(recommendationsList);
 
     // 4. Generate Executive Summary (2-4 sentences)
     const riskLabel = RiskLevelCalculator.getLabel(aiScore);
-    const confidenceLabel = confidence >= 75 ? "strong" : confidence >= 50 ? "moderate" : "tentative";
-    
-    const originalityPhrase = originalityScore >= 75 ? "high original expression" : originalityScore >= 50 ? "moderate original expression" : "low original expression";
-    const similarityPhrase = plagiarismScore >= 50 ? "significant internal repetitions" : plagiarismScore >= 25 ? "moderate internal repetitions" : "low structural repetition";
+    const confidenceLabel =
+      confidence >= 75 ? "strong" : confidence >= 50 ? "moderate" : "tentative";
 
-    const strengthText = finalStrengths[0] ? finalStrengths[0].toLowerCase() : "general readability";
-    const weaknessText = finalWeaknesses[0] ? finalWeaknesses[0].toLowerCase() : "minor sentence length variation";
+    const originalityPhrase =
+      originalityScore >= 75
+        ? "high original expression"
+        : originalityScore >= 50
+          ? "moderate original expression"
+          : "low original expression";
+    const similarityPhrase =
+      plagiarismScore >= 50
+        ? "significant internal repetitions"
+        : plagiarismScore >= 25
+          ? "moderate internal repetitions"
+          : "low structural repetition";
+
+    const strengthText = finalStrengths[0]
+      ? finalStrengths[0].toLowerCase()
+      : "general readability";
+    const weaknessText = finalWeaknesses[0]
+      ? finalWeaknesses[0].toLowerCase()
+      : "minor sentence length variation";
 
     const executiveSummary = `Forensic linguistic analysis evaluates the text at a ${riskLabel} AI Writing Probability (${aiScore}%) derived with ${confidenceLabel} confidence (${confidence}%). Observations indicate ${originalityPhrase} alongside ${similarityPhrase}. The text shows a deterministic writing quality rating of ${readabilityScore}%, with strengths noted in ${strengthText} and areas of improvement in ${weaknessText}.`;
 
