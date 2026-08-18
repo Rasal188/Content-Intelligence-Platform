@@ -58,8 +58,6 @@ export function validateAnalysisRequest(request: AnalysisRequest): ValidationRes
       return validateFile(request.file);
     case "paste":
       return validateTextContent(request.text);
-    case "url":
-      return validateUrl(request.url);
     default:
       return { isValid: false, error: VALIDATION_MESSAGES.UNKNOWN_ERROR };
   }

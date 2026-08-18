@@ -9,7 +9,8 @@ interface RecentAnalysisProps {
 const TYPE_LABEL_MAP: Record<string, string> = {
   ai_detection: "AI Detection",
   plagiarism: "Plagiarism Search",
-  full_audit: "Full Audit",
+  ai_humanizer: "AI Humanizer",
+  full_audit: "AI Humanizer",
 };
 
 /**

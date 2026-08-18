@@ -16,12 +16,12 @@ export interface DocumentItem {
 /**
  * Supported input sources for analysis.
  */
-export type InputSource = "file" | "paste" | "url";
+export type InputSource = "file" | "paste";
 
 /**
  * Supported analysis types/modes.
  */
-export type AnalysisType = "ai_detection" | "plagiarism" | "full_audit";
+export type AnalysisType = "ai_detection" | "plagiarism" | "ai_humanizer" | "full_audit";
 
 /**
  * Status states for an analysis job.
@@ -69,6 +69,10 @@ export interface AnalysisResult {
   characterCount: number;
   summary: string;
   completedAt: string;
+  humanizedText?: string;
+  originalText?: string;
+  humanizedAiScore?: number;
+  beforeAiScore?: number;
 }
 
 /**
@@ -83,6 +87,8 @@ export interface AnalysisJob {
   createdAt: string;
   result?: AnalysisResult;
   error?: string;
+  humanizedText?: string;
+  isHumanized?: boolean;
 }
 
 /**

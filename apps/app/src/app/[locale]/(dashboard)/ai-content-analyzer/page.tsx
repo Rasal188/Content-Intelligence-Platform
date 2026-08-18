@@ -4,24 +4,25 @@ import { Button } from "@v1/ui/button";
 import {
   Activity,
   Clipboard,
-  FileCheck,
   FileText,
-  Globe,
+  Loader2,
   Play,
   ShieldAlert,
   Sparkles,
   Upload,
 } from "lucide-react";
+import { useState } from "react";
 import { Header } from "../_components/header";
+import { ActiveJobCard } from "./_components/active-job-card";
 import { AnalysisTypeSelector } from "./_components/analysis-type-selector";
 import { DocumentUpload } from "./_components/document-upload";
 import { ErrorState } from "./_components/error-state";
-import { LoadingState } from "./_components/loading-state";
+import { JobHistory } from "./_components/job-history";
 import { PasteText } from "./_components/paste-text";
-import { RecentAnalysis } from "./_components/recent-analysis";
-import { RecentDocuments } from "./_components/recent-documents";
-import { UrlInput } from "./_components/url-input";
+import { QueuedJobs } from "./_components/queued-jobs";
 import { useAnalyzer } from "./_hooks/use-analyzer";
+import type { AnalysisJobItem } from "./_jobs/analysis-job.types";
+import { ResultViewer } from "./_results/_components/result-viewer";
 import type { InputSource } from "./_types/analysis";
 
 function StatCard({
@@ -56,7 +57,6 @@ const TAB_CONFIG: Array<{
 }> = [
   { id: "file", label: "Upload Document", icon: Upload },
   { id: "paste", label: "Paste Text", icon: Clipboard },
-  { id: "url", label: "URL Analysis", icon: Globe },
 ];
 
 export default function AIContentAnalyzerPage() {
@@ -65,21 +65,23 @@ export default function AIContentAnalyzerPage() {
     analysisType,
     selectedFile,
     pastedText,
-    urlInput,
-    isLoading,
-    loadingStage,
-    progressPercent,
     validationError,
-    recentAnalyses,
-    recentDocuments,
+    activeJob,
+    queuedJobs,
+    historyJobs,
     handleTabChange,
     setAnalysisType,
     handleFileSelect,
     handleTextChange,
-    handleUrlChange,
     runAnalysis,
+    cancelJob,
+    deleteHistoryJob,
+    duplicateJob,
+    clearHistory,
     dismissError,
   } = useAnalyzer();
+
+  const [reportJob, setReportJob] = useState<AnalysisJobItem | null>(null);
 
   return (
     <div className="flex min-h-full w-full flex-col bg-secondary dark:bg-black">
@@ -95,33 +97,47 @@ export default function AIContentAnalyzerPage() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard
               icon={FileText}
-              label="Documents"
-              value={recentDocuments.length}
-              sub="Submitted items"
+              label="Total Jobs"
+              value={historyJobs.length + (activeJob ? 1 : 0) + queuedJobs.length}
+              sub="Analysis items"
             />
             <StatCard
               icon={Sparkles}
-              label="AI Analyses"
-              value={recentAnalyses.length}
-              sub="Pattern checks run"
+              label="Active & Queued"
+              value={(activeJob ? 1 : 0) + queuedJobs.length}
+              sub="Engine queue"
             />
             <StatCard
               icon={ShieldAlert}
-              label="Plagiarism Reports"
-              value={
-                recentAnalyses.filter((a) => a.analysisType !== "ai_detection")
-                  .length
-              }
-              sub="Uniqueness audits"
+              label="Completed Audits"
+              value={historyJobs.filter((j) => j.status === "completed").length}
+              sub="Finished checks"
             />
             <StatCard
               icon={Activity}
-              label="System Status"
-              value={isLoading ? "Analyzing" : "Ready"}
-              sub={isLoading ? "Running pipeline" : "Idle"}
+              label="Engine Status"
+              value={activeJob ? "Processing" : "Idle"}
+              sub={activeJob ? `Job ${activeJob.id}` : "Ready for jobs"}
             />
           </div>
         </section>
+
+        {/* Active Job Execution Card */}
+        {activeJob && (
+          <section className="space-y-3">
+            <h2 className="text-sm font-medium text-primary/60">
+              Active Processing Job
+            </h2>
+            <ActiveJobCard job={activeJob} onCancel={cancelJob} />
+          </section>
+        )}
+
+        {/* Queued Jobs List */}
+        {queuedJobs.length > 0 && (
+          <section className="space-y-3">
+            <QueuedJobs jobs={queuedJobs} onCancel={cancelJob} />
+          </section>
+        )}
 
         {/* Validation Error Banner */}
         {validationError && (
@@ -134,10 +150,10 @@ export default function AIContentAnalyzerPage() {
           <div className="flex flex-col gap-4 border-b border-border pb-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="text-lg font-medium text-primary">
-                Document Workspace
+                Create Analysis Job
               </h2>
               <p className="text-xs text-primary/60">
-                Choose an input method and analysis mode to inspect content.
+                Choose an input method and analysis mode to submit a new job to the engine.
               </p>
             </div>
 
@@ -151,12 +167,11 @@ export default function AIContentAnalyzerPage() {
                     key={tab.id}
                     type="button"
                     onClick={() => handleTabChange(tab.id)}
-                    disabled={isLoading}
                     className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
                       isActive
                         ? "bg-card text-primary shadow-sm"
                         : "text-primary/60 hover:text-primary"
-                    } ${isLoading ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                    } cursor-pointer`}
                   >
                     <Icon className="h-3.5 w-3.5" />
                     {tab.label}
@@ -166,92 +181,68 @@ export default function AIContentAnalyzerPage() {
             </div>
           </div>
 
-          {/* Dynamic Tab Body & Loading View */}
-          {isLoading ? (
-            <LoadingState
-              stage={loadingStage}
-              progressPercent={progressPercent}
-            />
-          ) : (
-            <div className="space-y-6">
-              {/* Tab 1: Document Upload */}
-              {activeTab === "file" && (
-                <DocumentUpload
-                  selectedFile={selectedFile}
-                  onFileSelect={handleFileSelect}
-                  disabled={isLoading}
-                />
-              )}
-
-              {/* Tab 2: Paste Text */}
-              {activeTab === "paste" && (
-                <PasteText
-                  value={pastedText}
-                  onChange={handleTextChange}
-                  disabled={isLoading}
-                />
-              )}
-
-              {/* Tab 3: URL Input */}
-              {activeTab === "url" && (
-                <UrlInput
-                  value={urlInput}
-                  onChange={handleUrlChange}
-                  disabled={isLoading}
-                />
-              )}
-
-              {/* Mode Selection */}
-              <AnalysisTypeSelector
-                selected={analysisType}
-                onSelect={setAnalysisType}
-                disabled={isLoading}
+          {/* Dynamic Input Body */}
+          <div className="space-y-6">
+            {/* Tab 1: Document Upload */}
+            {activeTab === "file" && (
+              <DocumentUpload
+                selectedFile={selectedFile}
+                onFileSelect={handleFileSelect}
               />
+            )}
 
-              {/* Submit Action Button */}
-              <div className="flex justify-end border-t border-border/50 pt-4">
-                <Button
-                  onClick={runAnalysis}
-                  disabled={isLoading}
-                  className="min-w-[160px]"
-                >
-                  <Play className="mr-2 h-4 w-4 fill-current" />
-                  Analyze Content
-                </Button>
-              </div>
+            {/* Tab 2: Paste Text */}
+            {activeTab === "paste" && (
+              <PasteText value={pastedText} onChange={handleTextChange} />
+            )}
+
+            {/* Mode Selection */}
+            <AnalysisTypeSelector
+              selected={analysisType}
+              onSelect={setAnalysisType}
+            />
+
+            {/* Submit Action Button */}
+            <div className="flex justify-end border-t border-border/50 pt-4">
+              <Button onClick={runAnalysis} className="min-w-[160px]" disabled={!!activeJob}>
+                {activeJob ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Analyzing...
+                  </>
+                ) : (
+                  <>
+                    <Play className="mr-2 h-4 w-4 fill-current" />
+                    Analyze Content
+                  </>
+                )}
+              </Button>
             </div>
-          )}
+          </div>
         </section>
 
-        {/* Recent Results Grid */}
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-          {/* Recent Analyses Section */}
-          <section className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-medium text-primary/60">
-                Recent Analyses
-              </h2>
-              <span className="text-xs font-mono text-primary/40">
-                {recentAnalyses.length} total
-              </span>
-            </div>
-            <RecentAnalysis jobs={recentAnalyses} />
-          </section>
-
-          {/* Recent Documents Section */}
-          <section className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-medium text-primary/60">
-                Submitted Documents
-              </h2>
-              <span className="text-xs font-mono text-primary/40">
-                {recentDocuments.length} total
-              </span>
-            </div>
-            <RecentDocuments documents={recentDocuments} />
-          </section>
-        </div>
+        {/* Job History Section */}
+        <section className="space-y-3">
+          <JobHistory
+            jobs={historyJobs}
+            onDuplicate={duplicateJob}
+            onDelete={deleteHistoryJob}
+            onClearHistory={clearHistory}
+            onViewReport={(job) => setReportJob(job)}
+          />
+        </section>
       </div>
+
+      {/* Result Viewer Report Modal */}
+      {reportJob && (
+        <ResultViewer
+          jobId={reportJob.id}
+          documentName={reportJob.documentName}
+          textContent={reportJob.textContent}
+          job={reportJob}
+          onClose={() => setReportJob(null)}
+        />
+      )}
     </div>
   );
 }

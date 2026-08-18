@@ -21,7 +21,8 @@
     "lint": "turbo lint && bun lint:repo",
     "lint:repo": "bunx sherif@latest",
     "lint:repo:fix": "bunx sherif@latest --fix",
-    "typecheck": "turbo typecheck"
+    "typecheck": "turbo typecheck",
+    "benchmark-analysis": "bun tests/benchmarks/benchmark-runner.ts"
   },
   "devDependencies": {
     "@auth/core": "0.37.0",

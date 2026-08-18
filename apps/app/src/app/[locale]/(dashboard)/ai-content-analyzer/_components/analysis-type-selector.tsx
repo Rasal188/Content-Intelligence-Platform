@@ -1,6 +1,6 @@
 "use client";
 
-import { FileSearch, ShieldAlert, Sparkles } from "lucide-react";
+import { ShieldAlert, Sparkles, Wand2 } from "lucide-react";
 import type { AnalysisType } from "../_types/analysis";
 
 interface AnalysisTypeSelectorProps {
@@ -28,10 +28,10 @@ const ANALYSIS_OPTIONS: Array<{
     icon: ShieldAlert,
   },
   {
-    id: "full_audit",
-    title: "Full Content Audit",
-    description: "Comprehensive combined AI detection, plagiarism & quality check.",
-    icon: FileSearch,
+    id: "ai_humanizer",
+    title: "AI Humanizer",
+    description: "Rewrite & bypass AI detection with natural phrasing, variable cadence, and authentic human tone.",
+    icon: Wand2,
   },
 ];
 

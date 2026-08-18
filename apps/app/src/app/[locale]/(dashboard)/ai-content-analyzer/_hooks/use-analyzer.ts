@@ -1,18 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { getAnalysisService } from "../_services/analysis.service";
-import type {
-  AnalysisJob,
-  AnalysisType,
-  DocumentItem,
-  InputSource,
-  LoadingStage,
-} from "../_types/analysis";
+import { useState } from "react";
+import type { AnalysisType, InputSource } from "../_types/analysis";
 import { validateAnalysisRequest } from "../_utils/validators";
+import { useAnalysisJob } from "./use-analysis-job";
 
 /**
- * Custom React hook encapsulating state management, validation, loading stages, and service calls.
+ * Custom React hook encapsulating input workspace state management and Job Engine submission.
  */
 export function useAnalyzer() {
   const [activeTab, setActiveTab] = useState<InputSource>("file");
@@ -20,35 +14,19 @@ export function useAnalyzer() {
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [pastedText, setPastedText] = useState<string>("");
-  const [urlInput, setUrlInput] = useState<string>("");
-
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [loadingStage, setLoadingStage] = useState<LoadingStage>("idle");
-  const [progressPercent, setProgressPercent] = useState<number>(0);
 
   const [validationError, setValidationError] = useState<string | null>(null);
 
-  const [recentAnalyses, setRecentAnalyses] = useState<AnalysisJob[]>([]);
-  const [recentDocuments, setRecentDocuments] = useState<DocumentItem[]>([]);
-
-  const service = getAnalysisService();
-
-  const loadInitialData = useCallback(async () => {
-    try {
-      const [jobs, docs] = await Promise.all([
-        service.getRecentAnalyses(),
-        service.getRecentDocuments(),
-      ]);
-      setRecentAnalyses(jobs);
-      setRecentDocuments(docs);
-    } catch {
-      setValidationError("Failed to load recent activity.");
-    }
-  }, [service]);
-
-  useEffect(() => {
-    loadInitialData();
-  }, [loadInitialData]);
+  const {
+    activeJob,
+    queuedJobs,
+    historyJobs,
+    submitJob,
+    cancelJob,
+    deleteHistoryJob,
+    duplicateJob,
+    clearHistory,
+  } = useAnalysisJob();
 
   const handleTabChange = (tab: InputSource) => {
     setActiveTab(tab);
@@ -65,19 +43,17 @@ export function useAnalyzer() {
     setValidationError(null);
   };
 
-  const handleUrlChange = (url: string) => {
-    setUrlInput(url);
-    setValidationError(null);
-  };
-
   const clearInputs = () => {
     setSelectedFile(null);
     setPastedText("");
-    setUrlInput("");
     setValidationError(null);
   };
 
-  const runAnalysis = async () => {
+  const runAnalysis = () => {
+    if (activeJob) {
+      setValidationError("An analysis job is already active. Please wait or cancel it first.");
+      return;
+    }
     setValidationError(null);
 
     const requestPayload = {
@@ -85,7 +61,6 @@ export function useAnalyzer() {
       analysisType,
       file: activeTab === "file" ? selectedFile ?? undefined : undefined,
       text: activeTab === "paste" ? pastedText : undefined,
-      url: activeTab === "url" ? urlInput : undefined,
     };
 
     const validation = validateAnalysisRequest(requestPayload);
@@ -94,30 +69,7 @@ export function useAnalyzer() {
       return;
     }
 
-    setIsLoading(true);
-    setLoadingStage("uploading");
-    setProgressPercent(10);
-
-    try {
-      const job = await service.submitAnalysis(
-        requestPayload,
-        (stage, percent) => {
-          setLoadingStage(stage);
-          setProgressPercent(percent);
-        },
-      );
-
-      setRecentAnalyses((prev) => [job, ...prev.filter((j) => j.id !== job.id)]);
-      await loadInitialData();
-    } catch (err) {
-      setValidationError(
-        err instanceof Error ? err.message : "Analysis service request failed.",
-      );
-    } finally {
-      setIsLoading(false);
-      setLoadingStage("idle");
-      setProgressPercent(0);
-    }
+    submitJob(requestPayload);
   };
 
   return {
@@ -125,20 +77,20 @@ export function useAnalyzer() {
     analysisType,
     selectedFile,
     pastedText,
-    urlInput,
-    isLoading,
-    loadingStage,
-    progressPercent,
     validationError,
-    recentAnalyses,
-    recentDocuments,
+    activeJob,
+    queuedJobs,
+    historyJobs,
     handleTabChange,
     setAnalysisType,
     handleFileSelect,
     handleTextChange,
-    handleUrlChange,
     clearInputs,
     runAnalysis,
+    cancelJob,
+    deleteHistoryJob,
+    duplicateJob,
+    clearHistory,
     dismissError: () => setValidationError(null),
   };
 }

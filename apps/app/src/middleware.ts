@@ -5,6 +5,7 @@ import {
   nextjsMiddlewareRedirect,
 } from "@convex-dev/auth/nextjs/server";
 import { createI18nMiddleware } from "next-international/middleware";
+import { NextResponse } from "next/server";
 
 const I18nMiddleware = createI18nMiddleware({
   locales: ["en", "fr", "es"],
@@ -15,6 +16,11 @@ const I18nMiddleware = createI18nMiddleware({
 const isSignInPage = createRouteMatcher(["/login"]);
 
 export default convexAuthNextjsMiddleware(async (request, { convexAuth }) => {
+  // Bypass i18n rewrites for all API routes
+  if (request.nextUrl.pathname.startsWith("/api/")) {
+    return NextResponse.next();
+  }
+
   /*
   -----------------------------------
   TEMPORARY DEVELOPMENT BYPASS

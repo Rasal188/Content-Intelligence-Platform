@@ -188,23 +188,12 @@ export class MockAnalysisProvider implements IAnalysisProvider {
     if (request.source === "file" && request.file) {
       return request.file.name;
     }
-    if (request.source === "url" && request.url) {
-      try {
-        const u = new URL(request.url);
-        return u.hostname + (u.pathname.length > 1 ? u.pathname.slice(0, 15) : "");
-      } catch {
-        return "Web Document";
-      }
-    }
     return "Pasted Snippet.txt";
   }
 
   private extractTextContent(request: AnalysisRequest): string {
     if (request.source === "paste" && request.text) {
       return request.text;
-    }
-    if (request.source === "url" && request.url) {
-      return `Sample extracted text content from web address: ${request.url}`;
     }
     if (request.file) {
       return `Sample text content extracted from file: ${request.file.name} (${formatFileSize(request.file.size)})`;
