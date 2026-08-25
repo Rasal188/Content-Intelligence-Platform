@@ -606,7 +606,9 @@ describe("OllaGraph Scraper Service & Plagiarism Integration Unit Tests", () => 
   });
 
   describe("Real OllaGraph Integration End-to-End Test", () => {
-    test("Part 6 Real Text Test: Discovers and verifies public homepage text", async () => {
+    const isIntegrationEnabled = process.env.RUN_INTEGRATION_TESTS === "true";
+
+    test.skipIf(!isIntegrationEnabled)("Part 6 Real Text Test: Discovers and verifies public homepage text", async () => {
       const testText = "Scrape, crawl, search, and extract the live web — plus domain intelligence and vertical actors — behind one API key, one bill, and one MCP server. Flat 1 credit per call, no multipliers, refund on failure.";
       
       const discoveredSources = await WebPlagiarismMatcher.searchWebSources(testText);
