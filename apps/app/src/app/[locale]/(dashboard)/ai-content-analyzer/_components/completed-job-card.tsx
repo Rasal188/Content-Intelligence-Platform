@@ -49,22 +49,64 @@ export const CompletedJobCard: FC<CompletedJobCardProps> = ({
 
       {job.result && (
         <div className="grid grid-cols-2 gap-2 rounded-md bg-secondary/50 p-2 text-center text-xs">
-          <div>
-            <span className="text-[10px] text-primary/40 uppercase block">
-              Originality
-            </span>
-            <span className="font-mono text-sm font-bold text-green-600 dark:text-green-400">
-              {job.result.overallScore}%
-            </span>
-          </div>
-          <div>
-            <span className="text-[10px] text-primary/40 uppercase block">
-              AI Likelihood
-            </span>
-            <span className="font-mono text-sm font-bold text-primary/80">
-              {job.result.aiScore}%
-            </span>
-          </div>
+          {job.analysisType === "plagiarism" ? (
+            <>
+              <div>
+                <span className="text-[10px] text-primary/40 uppercase block">
+                  Originality
+                </span>
+                <span className="font-mono text-sm font-bold text-green-600 dark:text-green-400">
+                  {job.result.overallScore}%
+                </span>
+              </div>
+              <div>
+                <span className="text-[10px] text-primary/40 uppercase block">
+                  Plagiarism
+                </span>
+                <span className="font-mono text-sm font-bold text-amber-600 dark:text-amber-400">
+                  {job.result.plagiarismScore ?? Math.max(0, 100 - job.result.overallScore)}%
+                </span>
+              </div>
+            </>
+          ) : job.analysisType === "ai_humanizer" || job.isHumanized ? (
+            <>
+              <div>
+                <span className="text-[10px] text-primary/40 uppercase block">
+                  AI Likelihood
+                </span>
+                <span className="font-mono text-sm font-bold text-green-600 dark:text-green-400">
+                  {job.result.humanizedAiScore ?? job.result.aiScore}%
+                </span>
+              </div>
+              <div>
+                <span className="text-[10px] text-primary/40 uppercase block">
+                  Readability
+                </span>
+                <span className="font-mono text-sm font-bold text-blue-600 dark:text-blue-400">
+                  {job.result.readabilityScore ?? 90}%
+                </span>
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                <span className="text-[10px] text-primary/40 uppercase block">
+                  AI Likelihood
+                </span>
+                <span className="font-mono text-sm font-bold text-primary/80">
+                  {job.result.aiScore}%
+                </span>
+              </div>
+              <div>
+                <span className="text-[10px] text-primary/40 uppercase block">
+                  Human Likelihood
+                </span>
+                <span className="font-mono text-sm font-bold text-green-600 dark:text-green-400">
+                  {Math.max(0, 100 - job.result.aiScore)}%
+                </span>
+              </div>
+            </>
+          )}
         </div>
       )}
 

@@ -18,7 +18,6 @@ async function send(
   email: string,
   token: string,
 ) {
-  console.warn(`[auth] ${label} code for ${email}: ${token}`); // dev fallback
   try {
     await ctx?.runAction(internal.email.sendEmail, {
       to: email,
@@ -26,7 +25,7 @@ async function send(
       text: `Your ${label} code is ${token}`,
     });
   } catch (e) {
-    console.warn(`[email] ${label} send failed: ${(e as Error).message}`);
+    console.error(`[email] ${label} delivery action encountered an error`);
   }
 }
 

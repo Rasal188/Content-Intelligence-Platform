@@ -13,10 +13,7 @@ import type {
   JobState,
 } from "./analysis-job.types";
 
-/**
- * Execution stages for animated job simulation.
- */
-interface ExecutionStageConfig {
+export interface ExecutionStageConfig {
   state: JobState;
   stageName: string;
   progress: number;
@@ -24,7 +21,7 @@ interface ExecutionStageConfig {
   delayMs: number;
 }
 
-const STAGES: ExecutionStageConfig[] = [
+export const AI_DETECTION_STAGES: ExecutionStageConfig[] = [
   {
     state: "preparing",
     stageName: "Preparing Workspace",
@@ -68,6 +65,104 @@ const STAGES: ExecutionStageConfig[] = [
     delayMs: 800,
   },
 ];
+
+export const PLAGIARISM_STAGES: ExecutionStageConfig[] = [
+  {
+    state: "preparing",
+    stageName: "Preparing Workspace",
+    progress: 10,
+    message: "Initializing plagiarism audit environment",
+    delayMs: 800,
+  },
+  {
+    state: "preparing",
+    stageName: "Reading Document",
+    progress: 25,
+    message: "Parsing content payload and extracting text tokens",
+    delayMs: 1000,
+  },
+  {
+    state: "running",
+    stageName: "Generating Search Queries",
+    progress: 40,
+    message: "Extracting distinctive search passages",
+    delayMs: 900,
+  },
+  {
+    state: "running",
+    stageName: "Searching Web & Source Repositories",
+    progress: 60,
+    message: "Searching available web and academic sources",
+    delayMs: 1100,
+  },
+  {
+    state: "running",
+    stageName: "Verifying Source Overlap",
+    progress: 80,
+    message: "Performing deterministic verbatim matching",
+    delayMs: 1200,
+  },
+  {
+    state: "generating_report",
+    stageName: "Generating Report",
+    progress: 95,
+    message: "Formatting source evidence and similarity metrics",
+    delayMs: 800,
+  },
+];
+
+export const AI_HUMANIZER_STAGES: ExecutionStageConfig[] = [
+  {
+    state: "preparing",
+    stageName: "Preparing Workspace",
+    progress: 10,
+    message: "Initializing humanizer workspace",
+    delayMs: 800,
+  },
+  {
+    state: "preparing",
+    stageName: "Reading Document",
+    progress: 25,
+    message: "Parsing content payload and extracting text tokens",
+    delayMs: 1000,
+  },
+  {
+    state: "running",
+    stageName: "Analyzing Writing Structure",
+    progress: 40,
+    message: "Evaluating sentence cadence, perplexity, and syntax patterns",
+    delayMs: 900,
+  },
+  {
+    state: "running",
+    stageName: "Restructuring Content",
+    progress: 80,
+    message: "Rewriting text with natural rhythm, authentic burstiness, and human tone",
+    delayMs: 1200,
+  },
+  {
+    state: "generating_report",
+    stageName: "Generating Report",
+    progress: 95,
+    message: "Formatting humanized text output and score improvements",
+    delayMs: 800,
+  },
+];
+
+/**
+ * Returns analysis-mode aware execution stages for progress reporting.
+ */
+export function getStagesForAnalysisType(
+  analysisType?: string | null,
+): ExecutionStageConfig[] {
+  if (analysisType === "plagiarism" || analysisType === "plagiarism-check") {
+    return PLAGIARISM_STAGES;
+  }
+  if (analysisType === "ai_humanizer" || analysisType === "humanizer") {
+    return AI_HUMANIZER_STAGES;
+  }
+  return AI_DETECTION_STAGES;
+}
 
 /**
  * Central Analysis Job Engine orchestrating queues, state machines, and execution simulation.
@@ -117,7 +212,7 @@ export class AnalysisJobService {
       id: jobId,
       documentId: `doc-${Date.now().toString().slice(-4)}`,
       documentName: docName,
-      analysisType: request.analysisType,
+      analysisType: request.analysisType || "ai_detection",
       inputSource: request.source,
       status: "queued",
       progress: 0,
@@ -237,7 +332,8 @@ export class AnalysisJobService {
     this.notify();
 
     try {
-      for (const stage of STAGES) {
+      const stages = getStagesForAnalysisType(nextJob.analysisType);
+      for (const stage of stages) {
         if (!this.activeJob || this.activeJob.id !== nextJob.id) {
           break; // Job was cancelled
         }

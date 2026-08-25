@@ -25,10 +25,12 @@ export default async function Layout({
   /*
   -----------------------------------
   TEMPORARY DEVELOPMENT BYPASS
-  Remove after Convex deployment is configured.
+  Strictly disabled in production mode.
   -----------------------------------
   */
-  const isDevBypass = process.env.DEV_BYPASS_AUTH === "true";
+  const isDevBypass =
+    process.env.NODE_ENV !== "production" &&
+    process.env.DEV_BYPASS_AUTH === "true";
 
   if (!user?.username && !isDevBypass) {
     return redirect("/onboarding");

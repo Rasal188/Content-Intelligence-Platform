@@ -16,6 +16,7 @@ import type { UploadFileResponse } from "@xixixao/uploadstuff/react";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { Upload } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 
 export default function DashboardSettings() {
   const t = useScopedI18n("settings");
@@ -30,31 +31,49 @@ export default function DashboardSettings() {
   );
   const { doubleCheck, getButtonProps } = useDoubleCheck();
 
-  const handleUpdateUserImage = (uploaded: UploadFileResponse[]) => {
-    return updateUserImage({
-      imageId: (uploaded[0]?.response as { storageId: Id<"_storage"> })
-        .storageId,
-    });
+  const handleUpdateUserImage = async (uploaded: UploadFileResponse[]) => {
+    try {
+      await updateUserImage({
+        imageId: (uploaded[0]?.response as { storageId: Id<"_storage"> })
+          .storageId,
+      });
+      toast.success("Avatar updated successfully");
+    } catch {
+      toast.error("Failed to update avatar");
+    }
   };
 
   const handleDeleteAccount = async () => {
-    await deleteCurrentUserAccount();
-    signOut();
+    try {
+      await deleteCurrentUserAccount();
+      toast.success("Account deleted");
+      signOut();
+    } catch {
+      toast.error("Failed to delete account");
+    }
+  };
+
+  const currentUser = user ?? {
+    username: "developer",
+    email: "user@example.com",
+    avatarUrl: undefined,
+    subscription: null,
   };
 
   const usernameForm = useForm({
     validatorAdapter: zodValidator(),
     defaultValues: {
-      username: user?.username,
+      username: currentUser.username ?? "",
     },
     onSubmit: async ({ value }) => {
-      await updateUsername({ username: value.username || "" });
+      try {
+        await updateUsername({ username: value.username || "" });
+        toast.success("Username updated successfully");
+      } catch (err: any) {
+        toast.error(err?.message || "Failed to update username");
+      }
     },
   });
-
-  if (!user) {
-    return null;
-  }
 
   return (
     <div className="flex h-full w-full flex-col gap-6">
@@ -73,11 +92,11 @@ export default function DashboardSettings() {
             htmlFor="avatar_field"
             className="group relative flex cursor-pointer overflow-hidden rounded-full transition active:scale-95"
           >
-            {user.avatarUrl ? (
+            {currentUser.avatarUrl ? (
               <img
-                src={user.avatarUrl}
+                src={currentUser.avatarUrl}
                 className="h-20 w-20 rounded-full object-cover"
-                alt={user.username ?? user.email}
+                alt={currentUser.username ?? currentUser.email}
               />
             ) : (
               <div className="h-20 w-20 rounded-full bg-gradient-to-br from-lime-400 from-10% via-cyan-300 to-blue-500" />
@@ -101,7 +120,7 @@ export default function DashboardSettings() {
           <p className="text-sm font-normal text-primary/60">
             {t("avatar.uploadHint")}
           </p>
-          {user.avatarUrl && (
+          {currentUser.avatarUrl && (
             <Button
               type="button"
               size="sm"

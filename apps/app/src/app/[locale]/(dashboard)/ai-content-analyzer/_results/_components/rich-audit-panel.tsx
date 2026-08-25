@@ -232,9 +232,9 @@ export const RichAuditPanel: FC<RichAuditPanelProps> = ({ rawResult }) => {
             </div>
             <div className="space-y-4">
               {renderSection(
-                "originality",
-                "Original Expression & Similarity Assessment",
-                qualityReport.originalityAssessment,
+                "stylisticVariance",
+                "Stylistic Diversity & Linguistic Variance",
+                qualityReport.originalityAssessment || qualityReport.vocabularyAnalysis,
                 ShieldCheck,
               )}
               {renderSection(

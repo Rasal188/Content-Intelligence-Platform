@@ -160,7 +160,7 @@ export class ResultResponseValidator {
       readability = calculated.readabilityScore;
       overallScore = calculated.overallScore;
 
-      confidenceBreakdown = ConfidenceCalculator.calculateAll(data);
+      confidenceBreakdown = ConfidenceCalculator.calculateAll(data, textContent);
       confidence = confidenceBreakdown.overall;
       riskLevel = RiskLevelCalculator.calculate(aiScore);
     }
@@ -245,12 +245,57 @@ export class ResultResponseValidator {
       }
     }
 
+    // Map warnings
+    const rawWarnings = Array.isArray(data.warnings) ? data.warnings : [];
+    const warnings: AnalysisWarning[] = rawWarnings.map(
+      (item: unknown, idx: number) => {
+        const warn = (item && typeof item === "object" ? item : {}) as Record<
+          string,
+          unknown
+        >;
+        return {
+          id: typeof warn.id === "string" ? warn.id : `warn-${idx}`,
+          code: typeof warn.code === "string" ? warn.code : "OLLIMA_WARN",
+          message:
+            typeof warn.message === "string"
+              ? warn.message
+              : "General advisory recommendation.",
+          severity:
+            warn.severity === "error" ||
+            warn.severity === "warning" ||
+            warn.severity === "info"
+              ? warn.severity
+              : "warning",
+          category:
+            warn.category === "data_anomaly" ||
+            warn.category === "performance" ||
+            warn.category === "security" ||
+            warn.category === "compatibility"
+              ? warn.category
+              : "compatibility",
+        };
+      },
+    );
+
     // Real Web & Digital Repository Plagiarism Matches (Grounded against live web knowledge index and dynamic search)
     const rawCandidates = WebPlagiarismMatcher.match(
       textContent,
       plagiarismScore,
       dynamicCandidates,
     );
+
+    // STEP 7: Log Match Input
+    console.log("[PLAGIARISM:MATCH_INPUT]", JSON.stringify({
+      submittedWords: textContent.split(/\s+/).length,
+      candidateCount: rawCandidates.length,
+      verifiedCount: rawCandidates.filter((c) => c.verificationStatus === "VERIFIED").length,
+      snippetMatchCount: rawCandidates.filter((c) => c.verificationStatus === "SNIPPET_MATCH").length,
+      candidates: rawCandidates.map((c) => ({
+        url: c.sourceUrl,
+        verificationStatus: c.verificationStatus,
+        sourceTextLength: c.originalSnippet?.length || 0,
+      })),
+    }));
 
     // Deterministic Text Matching & N-Gram Verification (TypeScript Engine is the single source of truth)
     const deterministicReport = DeterministicMatcher.evaluate(
@@ -259,14 +304,51 @@ export class ResultResponseValidator {
     );
     const matchedSources = deterministicReport.verifiedSources;
 
+    // STEP 8: Log Final Forensic Result
+    console.log("[PLAGIARISM:MATCH_RESULT]", JSON.stringify({
+      matchedWords: deterministicReport.matchedWords,
+      totalWords: deterministicReport.totalSubmittedWords,
+      similarityPercent: deterministicReport.literalSimilarityPercent,
+      verifiedSources: deterministicReport.verifiedSources.map((s) => ({
+        url: s.sourceUrl,
+        matchedWords: s.matchedWordCount,
+        sim: s.similarityPercent,
+      })),
+    }));
+
+    const isSearchFailed = dynamicCandidates.some(
+      (c) => c.id === "ollagraph-search-failed" || c.sourceTitle?.includes("OllaGraph Search Unavailable"),
+    );
+
     if (deterministicReport.verifiedSources.length > 0) {
       plagiarismScore = deterministicReport.literalSimilarityPercent;
-      originalityScore = Math.max(1, 100 - plagiarismScore);
+      originalityScore = Math.max(0, 100 - plagiarismScore);
+    } else if (isSearchFailed) {
+      // If external search provider completely failed, plagiarism status is undetermined (cannot claim clean verified 100% original)
+      plagiarismScore = 0;
+      originalityScore = 0;
+      warnings.push({
+        id: "warn-search-failed",
+        code: "OLLAGRAPH_SEARCH_FAILED",
+        message: "OllaGraph source discovery failed. Plagiarism result cannot be reliably determined.",
+        severity: "error",
+      });
     } else {
       // If no verified sources exist in the database with verbatim N-grams, document is clean of known web plagiarism
       plagiarismScore = 0;
       originalityScore = 100;
     }
+
+    // STEP 9: Log Final Validation
+    console.log("[PLAGIARISM:FINAL]", JSON.stringify({
+      plagiarismScore,
+      originalityScore,
+      matchedWords: deterministicReport.matchedWords,
+      sourceCount: matchedSources.length,
+      verifiedSourceCount: matchedSources.filter((s) => s.verificationStatus === "VERIFIED").length,
+      candidateCount: rawCandidates.length,
+      isSearchFailed,
+    }));
 
     // Map recommendations
     const rawRecs = Array.isArray(data.recommendations)
@@ -302,26 +384,6 @@ export class ResultResponseValidator {
         status: ResultResponseValidator.parseStatus(rec.status),
       };
     });
-
-    // Map warnings
-    const rawWarnings = Array.isArray(data.warnings) ? data.warnings : [];
-    const warnings: AnalysisWarning[] = rawWarnings.map(
-      (item: unknown, idx: number) => {
-        const warn = (item && typeof item === "object" ? item : {}) as Record<
-          string,
-          unknown
-        >;
-        return {
-          id: typeof warn.id === "string" ? warn.id : `warn-${idx}`,
-          code: typeof warn.code === "string" ? warn.code : "OLLIMA_WARN",
-          message:
-            typeof warn.message === "string"
-              ? warn.message
-              : "General advisory recommendation.",
-          severity: ResultResponseValidator.parseSeverity(warn.severity),
-        };
-      },
-    );
 
     // Summary generator
     const generatedSummary = SummaryGenerator.generate(
@@ -402,7 +464,7 @@ export class ResultResponseValidator {
       isMockData: false,
       requestId,
       providerRequestId,
-      providerModel: modelName || "claude-sonnet-4.6",
+      providerModel: modelName || "gemini-3.6-flash-high",
       analysisVersion: "2.0.0",
       promptVersion: PROMPT_VERSION,
     };

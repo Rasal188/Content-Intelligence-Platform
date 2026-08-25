@@ -35,8 +35,8 @@ export function RecentAnalysis({ jobs }: RecentAnalysisProps) {
             <tr>
               <th className="px-4 py-3 font-medium">Document / Source</th>
               <th className="px-4 py-3 font-medium">Mode</th>
-              <th className="px-4 py-3 font-medium">Originality Score</th>
-              <th className="px-4 py-3 font-medium">AI Score</th>
+              <th className="px-4 py-3 font-medium">Primary Metric</th>
+              <th className="px-4 py-3 font-medium">Secondary Metric</th>
               <th className="px-4 py-3 font-medium">Status</th>
               <th className="px-4 py-3 font-medium">Completed</th>
             </tr>
@@ -52,18 +52,50 @@ export function RecentAnalysis({ jobs }: RecentAnalysisProps) {
                 </td>
                 <td className="px-4 py-3">
                   {job.result ? (
-                    <span className="font-mono text-sm font-semibold text-green-600 dark:text-green-400">
-                      {job.result.overallScore}%
-                    </span>
+                    job.analysisType === "plagiarism" ? (
+                      <div>
+                        <span className="font-mono text-sm font-semibold text-green-600 dark:text-green-400">
+                          {job.result.overallScore}%
+                        </span>
+                        <span className="text-[10px] text-primary/40 block">
+                          Originality
+                        </span>
+                      </div>
+                    ) : (
+                      <div>
+                        <span className="font-mono text-sm font-semibold text-primary/80">
+                          {job.result.aiScore}%
+                        </span>
+                        <span className="text-[10px] text-primary/40 block">
+                          AI Likelihood
+                        </span>
+                      </div>
+                    )
                   ) : (
                     <span className="text-primary/40">—</span>
                   )}
                 </td>
                 <td className="px-4 py-3">
                   {job.result ? (
-                    <span className="font-mono text-sm text-primary/80">
-                      {job.result.aiScore}%
-                    </span>
+                    job.analysisType === "plagiarism" ? (
+                      <div>
+                        <span className="font-mono text-sm font-semibold text-amber-600 dark:text-amber-400">
+                          {job.result.plagiarismScore ?? Math.max(0, 100 - job.result.overallScore)}%
+                        </span>
+                        <span className="text-[10px] text-primary/40 block">
+                          Plagiarism
+                        </span>
+                      </div>
+                    ) : (
+                      <div>
+                        <span className="font-mono text-sm font-semibold text-green-600 dark:text-green-400">
+                          {Math.max(0, 100 - job.result.aiScore)}%
+                        </span>
+                        <span className="text-[10px] text-primary/40 block">
+                          Human Likelihood
+                        </span>
+                      </div>
+                    )
                   ) : (
                     <span className="text-primary/40">—</span>
                   )}

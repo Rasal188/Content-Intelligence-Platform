@@ -53,27 +53,35 @@ export const PlagiarismResultCard: FC<PlagiarismResultCardProps> = ({
     const sentenceWords = cleanSentence.split(/\s+/).filter(Boolean);
     const sWordCount = sentenceWords.length;
 
-    // Check if any verified source actually contains a 5+ word consecutive n-gram from this sentence
+    // Check if any verified source actually contains n-grams from this sentence and calculate exact sentence-level coverage
     let isMatched = false;
-    let sentenceSimilarity = 0;
+    let sentenceMatchedWords = 0;
 
     if (sources.length > 0 && sWordCount >= 4) {
-      const ngramSize = Math.min(5, sWordCount);
+      const ngramSize = Math.min(4, sWordCount);
+      const matchedIndicesInSentence = new Set<number>();
+
       for (const s of sources) {
         const sourceTextClean = (s.originalSnippet || s.matchedSnippet || "")
           .toLowerCase()
           .replace(/[^a-z0-9 ]/g, " ");
+
         for (let i = 0; i <= sWordCount - ngramSize; i++) {
           const ngram = sentenceWords.slice(i, i + ngramSize).join(" ");
           if (sourceTextClean.includes(ngram)) {
             isMatched = true;
-            sentenceSimilarity = s.similarityPercent;
-            break;
+            for (let k = i; k < i + ngramSize; k++) {
+              matchedIndicesInSentence.add(k);
+            }
           }
         }
-        if (isMatched) break;
       }
+      sentenceMatchedWords = matchedIndicesInSentence.size;
     }
+
+    const sentenceSimilarity = sWordCount > 0 && isMatched
+      ? Math.min(100, Math.round((sentenceMatchedWords / sWordCount) * 100))
+      : 0;
 
     const status = isMatched
       ? sentenceSimilarity >= 80
@@ -84,7 +92,7 @@ export const PlagiarismResultCard: FC<PlagiarismResultCardProps> = ({
     return {
       index: idx + 1,
       text: trimmed,
-      similarity: isMatched ? sentenceSimilarity : 0,
+      similarity: sentenceSimilarity,
       status,
       wordCount: sWordCount,
     };
@@ -115,24 +123,46 @@ export const PlagiarismResultCard: FC<PlagiarismResultCardProps> = ({
   const [selectedSource, setSelectedSource] = useState<MatchedSource | null>(
     primarySource,
   );
+  const [showFullSource, setShowFullSource] = useState<boolean>(false);
+
+  const isSearchFailed = (rawResult.warnings || []).some(
+    (w) => w.code === "OLLAGRAPH_SEARCH_FAILED",
+  );
 
   // Determine risk categorization
   const isHighRisk = effectiveSimScore >= 30;
   const isModerateRisk = effectiveSimScore >= 15 && effectiveSimScore < 30;
-  const riskTitle = isHighRisk
-    ? "High Similarity Detected"
-    : isModerateRisk
-      ? "Moderate Similarity"
-      : sources.length > 0
-        ? "Clean & Original"
-        : "NO VERIFIED MATCH FOUND";
-  const reportSubtitle =
-    sources.length > 0
+  const riskTitle = isSearchFailed
+    ? "OLLAGRAPH SEARCH FAILED"
+    : isHighRisk
+      ? "High Similarity Detected"
+      : isModerateRisk
+        ? "Moderate Similarity"
+        : sources.length > 0
+          ? "Clean & Original"
+          : "NO VERIFIED MATCH FOUND";
+  const reportSubtitle = isSearchFailed
+    ? "OllaGraph source discovery failed. Plagiarism result cannot be reliably determined."
+    : sources.length > 0
       ? "Compared against verified external sources retrieved during this analysis."
       : "No verified external source was found for this content.";
 
   return (
     <div className="space-y-6">
+      {/* Search Degradation Warning Alert */}
+      {isSearchFailed && (
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-amber-800 dark:text-amber-300 flex items-start gap-3">
+          <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+          <div className="space-y-1 text-xs">
+            <h4 className="font-bold text-sm">OllaGraph Source Discovery Failed</h4>
+            <p className="leading-relaxed">
+              External web search was unavailable or uncontactable during this audit pass.
+              The plagiarism and originality scores cannot be verified against the live web and should not be considered clean.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* ─────────────────────────────────────────────────────────────
           SECTION 1: PLAGIARISM ANALYSIS OVERVIEW & HERO SCORE
       ───────────────────────────────────────────────────────────── */}
@@ -142,18 +172,24 @@ export const PlagiarismResultCard: FC<PlagiarismResultCardProps> = ({
             {/* Circular / Badge Hero Score */}
             <div
               className={`flex flex-col items-center justify-center h-24 w-32 rounded-xl border p-3 ${
-                isHighRisk
-                  ? "bg-red-500/10 border-red-500/30 text-red-600 dark:text-red-400"
-                  : isModerateRisk
-                    ? "bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400"
-                    : "bg-green-500/10 border-green-500/30 text-green-600 dark:text-green-400"
+                isSearchFailed
+                  ? "bg-secondary/40 border-border text-primary/60"
+                  : isHighRisk
+                    ? "bg-red-500/10 border-red-500/30 text-red-600 dark:text-red-400"
+                    : isModerateRisk
+                      ? "bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400"
+                      : "bg-green-500/10 border-green-500/30 text-green-600 dark:text-green-400"
               }`}
             >
               <span className="text-3xl font-bold font-mono tracking-tight">
-                {effectiveSimScore}%
+                {isSearchFailed ? "--" : `${effectiveSimScore}%`}
               </span>
               <span className="text-[10px] font-bold uppercase tracking-wider mt-0.5 text-center leading-tight">
-                {effectiveSimScore >= 90 ? "EXACT MATCH" : "MATCHED CONTENT"}
+                {isSearchFailed
+                  ? "SEARCH FAILED"
+                  : effectiveSimScore >= 90
+                    ? "EXACT MATCH"
+                    : "MATCHED CONTENT"}
               </span>
             </div>
 
@@ -164,11 +200,13 @@ export const PlagiarismResultCard: FC<PlagiarismResultCardProps> = ({
                 </h2>
                 <span
                   className={`inline-flex items-center rounded-md px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wider ${
-                    isHighRisk
-                      ? "bg-red-500/15 text-red-600 dark:text-red-400"
-                      : isModerateRisk
-                        ? "bg-amber-500/15 text-amber-600 dark:text-amber-400"
-                        : "bg-green-500/15 text-green-600 dark:text-green-400"
+                    isSearchFailed
+                      ? "bg-amber-500/15 text-amber-600 dark:text-amber-400"
+                      : isHighRisk
+                        ? "bg-red-500/15 text-red-600 dark:text-red-400"
+                        : isModerateRisk
+                          ? "bg-amber-500/15 text-amber-600 dark:text-amber-400"
+                          : "bg-green-500/15 text-green-600 dark:text-green-400"
                   }`}
                 >
                   {riskTitle}
@@ -365,29 +403,75 @@ export const PlagiarismResultCard: FC<PlagiarismResultCardProps> = ({
                     <p className="font-mono text-green-600 dark:text-green-400 font-semibold">
                       {selectedSource.verificationStatus === "UNVERIFIED"
                         ? "Confidence: Unverified"
-                        : "Confidence: VERY HIGH"}
+                        : selectedSource.verificationStatus === "SNIPPET_MATCH"
+                          ? "Confidence: HIGH (Search Snippet Evidence)"
+                          : "Confidence: VERY HIGH (Full Document Verified)"}
                     </p>
                   </div>
                 </div>
 
-                <div className="space-y-2 text-xs">
-                  <div className="rounded bg-secondary/30 p-2.5 border border-border/40 space-y-1">
-                    <span className="text-[10px] uppercase font-bold text-primary/40 block">
-                      Matched Snippet
-                    </span>
-                    <p className="font-mono text-primary/80 italic">
-                      "{selectedSource.matchedSnippet}"
+                <div className="space-y-3 text-xs">
+                  {/* Matched excerpt from submitted content */}
+                  <div className="rounded-lg bg-secondary/30 p-3 border border-border/40 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] uppercase font-bold text-primary/50 block">
+                        Matched Excerpt in Submitted Text
+                      </span>
+                    </div>
+                    <p className="font-mono text-primary/90 leading-relaxed text-xs">
+                      {selectedSource.matchedSnippet ? (
+                        <span>"{selectedSource.matchedSnippet}"</span>
+                      ) : (
+                        <span className="text-primary/40 italic">No specific excerpt available</span>
+                      )}
                     </p>
                   </div>
-                  <div className="rounded bg-secondary/30 p-2.5 border border-border/40 space-y-1">
-                    <span className="text-[10px] uppercase font-bold text-primary/40 block">
-                      Indexed Source Text
-                    </span>
-                    <p className="font-mono text-primary/80 italic">
-                      {selectedSource.verificationStatus === "UNVERIFIED"
-                        ? "Exact external source passage unverified."
-                        : `"${selectedSource.originalSnippet}"`}
-                    </p>
+
+                  {/* Indexed Source Evidence retrieved directly from external source */}
+                  <div className="rounded-lg bg-secondary/30 p-3 border border-border/40 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] uppercase font-bold text-primary/50 block">
+                        Matched Source Evidence
+                      </span>
+                      {selectedSource.originalSnippet && selectedSource.originalSnippet.length > 200 && (
+                        <button
+                          type="button"
+                          onClick={() => setShowFullSource(!showFullSource)}
+                          className="text-[11px] font-medium text-primary/60 hover:text-primary underline cursor-pointer"
+                        >
+                          {showFullSource ? "Show Matching Excerpt" : "View Full Source Document"}
+                        </button>
+                      )}
+                    </div>
+                    <div className="rounded bg-background/80 p-3 border border-border/50 max-h-56 overflow-y-auto font-mono text-primary/90 text-xs leading-relaxed whitespace-pre-wrap">
+                      {selectedSource.verificationStatus === "UNVERIFIED" ? (
+                        <span className="text-primary/40 italic">Exact external source passage unverified.</span>
+                      ) : showFullSource ? (
+                        selectedSource.originalSnippet || <span className="text-primary/40 italic">Source text empty.</span>
+                      ) : selectedSource.matchedSourceContext ? (
+                        <span>
+                          {selectedSource.matchedSourceContext.before && (
+                            <span className="text-primary/50">{selectedSource.matchedSourceContext.before} </span>
+                          )}
+                          <mark className="bg-amber-500/25 text-primary font-semibold px-0.5 rounded">
+                            {selectedSource.matchedSourceContext.match}
+                          </mark>
+                          {selectedSource.matchedSourceContext.after && (
+                            <span className="text-primary/50"> {selectedSource.matchedSourceContext.after}</span>
+                          )}
+                        </span>
+                      ) : selectedSource.matchedSourceSnippet ? (
+                        <mark className="bg-amber-500/25 text-primary font-semibold px-0.5 rounded">
+                          {selectedSource.matchedSourceSnippet}
+                        </mark>
+                      ) : selectedSource.originalSnippet ? (
+                        selectedSource.originalSnippet.length > 350
+                          ? `${selectedSource.originalSnippet.slice(0, 350)}...`
+                          : selectedSource.originalSnippet
+                      ) : (
+                        <span className="text-primary/40 italic">Retrieved source passage is empty.</span>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -467,7 +551,7 @@ export const PlagiarismResultCard: FC<PlagiarismResultCardProps> = ({
                     </div>
                     <span className="text-[11px] text-primary/50 truncate block">
                       {src.publication || "Web Knowledge Base"} • {srcWords}{" "}
-                      words overlap ({src.similarityPercent}% match)
+                      words matched from this source ({src.similarityPercent}% coverage)
                     </span>
                   </div>
                 </div>
@@ -479,6 +563,10 @@ export const PlagiarismResultCard: FC<PlagiarismResultCardProps> = ({
                   {src.verificationStatus === "UNVERIFIED" ? (
                     <span className="rounded bg-yellow-500/10 border border-yellow-500/30 px-2 py-0.5 text-[10px] font-mono font-bold uppercase text-yellow-600 dark:text-yellow-400">
                       Unverified
+                    </span>
+                  ) : src.verificationStatus === "SNIPPET_MATCH" ? (
+                    <span className="rounded bg-blue-500/10 border border-blue-500/30 px-2 py-0.5 text-[10px] font-mono font-bold uppercase text-blue-600 dark:text-blue-400">
+                      Snippet Match
                     </span>
                   ) : src.sourceUrl ? (
                     <a
@@ -584,11 +672,27 @@ export const PlagiarismResultCard: FC<PlagiarismResultCardProps> = ({
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-primary/70">Total Unique Sentences:</span>
-                <span className="font-mono font-bold text-primary">
+                <span className="text-primary/70">Original Sentences (Unmatched):</span>
+                <span className="font-mono font-bold text-green-600 dark:text-green-400">
                   {originalSentenceCount} of {sentenceAnalysis.length}
                 </span>
               </div>
+              {partialMatchesCount > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-primary/70">Partial Match Sentences:</span>
+                  <span className="font-mono font-bold text-amber-600 dark:text-amber-400">
+                    {partialMatchesCount} of {sentenceAnalysis.length}
+                  </span>
+                </div>
+              )}
+              {highMatchesCount > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-primary/70">High/Exact Match Sentences:</span>
+                  <span className="font-mono font-bold text-red-600 dark:text-red-400">
+                    {highMatchesCount} of {sentenceAnalysis.length}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 

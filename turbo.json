@@ -14,7 +14,11 @@
         "OPENPANEL_SECRET_KEY",
         "SENTRY_AUTH_TOKEN",
         "SENTRY_ORG",
-        "SENTRY_PROJECT"
+        "SENTRY_PROJECT",
+        "NEXT_PUBLIC_CONVEX_URL",
+        "NEXT_PUBLIC_APP_URL",
+        "NEXT_PUBLIC_OPENPANEL_CLIENT_ID",
+        "SKIP_ENV_VALIDATION"
       ],
       "inputs": ["$TURBO_DEFAULT$", ".env"],
       "dependsOn": ["^build"],

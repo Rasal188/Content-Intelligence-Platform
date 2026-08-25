@@ -10,7 +10,7 @@ import { useAnalysisJob } from "./use-analysis-job";
  */
 export function useAnalyzer() {
   const [activeTab, setActiveTab] = useState<InputSource>("file");
-  const [analysisType, setAnalysisType] = useState<AnalysisType>("full_audit");
+  const [analysisType, setAnalysisType] = useState<AnalysisType | null>("ai_detection");
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [pastedText, setPastedText] = useState<string>("");
@@ -49,6 +49,18 @@ export function useAnalyzer() {
     setValidationError(null);
   };
 
+  // 1. Content validation check
+  const hasValidContent =
+    activeTab === "file"
+      ? selectedFile !== null && selectedFile.size > 0
+      : pastedText.trim().length >= 20 && pastedText.trim().length <= 50000;
+
+  // 2. Mode selection check
+  const hasSelectedMode = analysisType !== null && analysisType !== undefined;
+
+  // 3. Complete enabled state condition: BOTH content AND mode must be valid
+  const isSubmitDisabled = !hasValidContent || !hasSelectedMode || !!activeJob;
+
   const runAnalysis = () => {
     if (activeJob) {
       setValidationError(
@@ -56,18 +68,26 @@ export function useAnalyzer() {
       );
       return;
     }
+
+    if (!hasSelectedMode || !hasValidContent) {
+      setValidationError(
+        "Select an analysis mode and provide content to continue.",
+      );
+      return;
+    }
+
     setValidationError(null);
 
     const requestPayload = {
       source: activeTab,
-      analysisType,
+      analysisType: analysisType!,
       file: activeTab === "file" ? selectedFile ?? undefined : undefined,
       text: activeTab === "paste" ? pastedText : undefined,
     };
 
     const validation = validateAnalysisRequest(requestPayload);
     if (!validation.isValid) {
-      setValidationError(validation.error || "Validation failed.");
+      setValidationError(validation.error || "Select an analysis mode and provide content to continue.");
       return;
     }
 
@@ -83,6 +103,9 @@ export function useAnalyzer() {
     activeJob,
     queuedJobs,
     historyJobs,
+    hasValidContent,
+    hasSelectedMode,
+    isSubmitDisabled,
     handleTabChange,
     setAnalysisType,
     handleFileSelect,

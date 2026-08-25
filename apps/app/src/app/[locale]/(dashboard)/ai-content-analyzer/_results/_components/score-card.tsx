@@ -14,8 +14,10 @@ export const ScoreCard: FC<ScoreCardProps> = ({ score }) => {
   // Determine dynamic typography color based on score type and threshold values
   let scoreColorStyle = "text-primary";
   if (!isValEmpty) {
-    if (score.id === "score-orig") {
+    if (score.id === "score-orig" || score.id === "score-human") {
       scoreColorStyle = "text-green-600 dark:text-green-400";
+    } else if (score.id === "score-mixed") {
+      scoreColorStyle = "text-yellow-600 dark:text-yellow-400";
     } else if (score.id === "score-ai") {
       scoreColorStyle =
         score.value > 50
@@ -56,10 +58,10 @@ export const ScoreCard: FC<ScoreCardProps> = ({ score }) => {
       {score.id === "score-plag" && (
         <p className="text-[10px] leading-snug text-primary/40 border-t border-border/40 pt-2 mt-1 italic">
           This assessment is generated from forensic linguistic and structural
-          analysis of the submitted document. External source verification and
-          web-scale plagiarism detection are not currently enabled.
+          analysis of the submitted document.
         </p>
       )}
     </div>
   );
 };
+

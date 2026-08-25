@@ -149,7 +149,7 @@ export class MockAnalysisProvider implements IAnalysisProvider {
       id: jobId,
       documentName: docName,
       source: request.source,
-      analysisType: request.analysisType,
+      analysisType: request.analysisType || "ai_detection",
       status: "completed",
       createdAt: new Date().toISOString(),
       result,

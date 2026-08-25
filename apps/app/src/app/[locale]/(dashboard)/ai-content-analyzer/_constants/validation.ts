@@ -15,6 +15,10 @@ export const VALIDATION_MESSAGES = {
   INVALID_URL:
     "Invalid web address. Please include a valid http:// or https:// protocol URL.",
   URL_TOO_LONG: "URL exceeds the maximum supported length.",
+  NO_MODE_OR_CONTENT:
+    "Select an analysis mode and provide content to continue.",
+  NO_MODE_SELECTED:
+    "Select an analysis mode and provide content to continue.",
   UNKNOWN_ERROR:
     "An unexpected error occurred during processing. Please try again.",
 } as const;

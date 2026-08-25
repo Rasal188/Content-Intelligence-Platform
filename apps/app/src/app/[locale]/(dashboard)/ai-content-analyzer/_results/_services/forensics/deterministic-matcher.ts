@@ -36,24 +36,71 @@ export class DeterministicMatcher {
 
   /**
    * Normalizes text for verbatim matching:
-   * - Lowercases text
-   * - Strips curly/smart quotes, em-dashes, and special punctuation
+   * - Decodes named & numeric HTML entities (&nbsp;, &amp;, &#39;, &ldquo;, etc.)
+   * - Converts all Unicode whitespace characters (NBSP, em-space, en-space, etc.) to standard spaces
+   * - Strips zero-width characters (U+200B, U+200C, U+200D, U+FEFF)
+   * - Strips curly/smart quotes, smart apostrophes, em-dashes, and special punctuation
+   * - Normalizes Unicode text via NFKC
    * - Collapses multiple spaces/newlines into single space
    */
   public static normalize(text: string): string {
     if (!text) return "";
-    return text
+    let clean = text;
+
+    // 1. Decode common named and numeric HTML entities
+    clean = clean
+      .replace(/&nbsp;/gi, " ")
+      .replace(/&amp;/gi, "&")
+      .replace(/&lt;/gi, "<")
+      .replace(/&gt;/gi, ">")
+      .replace(/&quot;/gi, '"')
+      .replace(/&apos;/gi, "'")
+      .replace(/&#39;/g, "'")
+      .replace(/&#8216;/g, "'")
+      .replace(/&#8217;/g, "'")
+      .replace(/&#8220;/g, '"')
+      .replace(/&#8221;/g, '"')
+      .replace(/&#8211;/g, "-")
+      .replace(/&#8212;/g, "-")
+      .replace(/&#(\d+);/g, (_, num) => {
+        try {
+          return String.fromCharCode(parseInt(num, 10));
+        } catch {
+          return " ";
+        }
+      })
+      .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => {
+        try {
+          return String.fromCharCode(parseInt(hex, 16));
+        } catch {
+          return " ";
+        }
+      });
+
+    // 2. Unicode normalization (NFKC)
+    clean = clean.normalize("NFKC");
+
+    // 3. Strip zero-width characters
+    clean = clean.replace(/[\u200B-\u200D\uFEFF]/g, "");
+
+    // 4. Convert all Unicode whitespace to normal space
+    clean = clean.replace(/[\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000]/g, " ");
+
+    // 5. Smart punctuation & quotes
+    clean = clean
       .toLowerCase()
-      .replace(/[\u2018\u2019]/g, "'")
+      .replace(/[\u2018\u2019`]/g, "'")
       .replace(/[\u201C\u201D]/g, '"')
       .replace(/[\u2013\u2014]/g, "-")
       .replace(/[^a-z0-9\s'-]/g, " ")
       .replace(/\s+/g, " ")
       .trim();
+
+    return clean;
   }
 
   /**
-   * Extracts clean words with character offset indices.
+   * Extracts clean words with character offset indices from normalized text.
    */
   public static extractWords(
     text: string,
@@ -63,11 +110,18 @@ export class DeterministicMatcher {
     let match = regex.exec(text);
 
     while (match !== null) {
-      words.push({
-        word: match[0].toLowerCase(),
-        start: match.index,
-        end: match.index + match[0].length,
-      });
+      const normalizedToken = match[0]
+        .toLowerCase()
+        .replace(/[\u2018\u2019`]/g, "'")
+        .replace(/^['-]+|['-]+$/g, ""); // Strip leading/trailing dangling dashes/apostrophes
+
+      if (normalizedToken.length > 0) {
+        words.push({
+          word: normalizedToken,
+          start: match.index,
+          end: match.index + match[0].length,
+        });
+      }
       match = regex.exec(text);
     }
 
@@ -228,7 +282,11 @@ export class DeterministicMatcher {
     const matchedSpans: DeterministicMatchSpan[] = [];
 
     for (const candidate of candidates) {
-      if (candidate.verificationStatus !== "VERIFIED" || !candidate.sourceUrl) {
+      if (
+        (candidate.verificationStatus !== "VERIFIED" &&
+          candidate.verificationStatus !== "SNIPPET_MATCH") ||
+        !candidate.sourceUrl
+      ) {
         unverifiedCandidates.push(candidate);
         continue;
       }
@@ -246,20 +304,63 @@ export class DeterministicMatcher {
       );
       const sourceTextFlat = sourceWords.join(" ");
 
-      // 1. Check Exact Match
-      if (
-        normSource.includes(normSubmitted) ||
-        normSubmitted.includes(normSource)
-      ) {
+      // 1. Check Exact Document Match (source contains entire submitted text)
+      if (normSource.includes(normSubmitted)) {
         for (let i = 0; i < submittedWords.length; i++) {
           matchedWordIndices.add(i);
+        }
+
+        let exactSourceMatchedText = submittedText;
+        let exactBefore = "";
+        let exactAfter = "";
+
+        if (candidate.originalSnippet) {
+          const rawSource = candidate.originalSnippet;
+          const rawSourceWords = DeterministicMatcher.extractWords(rawSource);
+          const firstSubWord = submittedWords[0]?.word;
+          const lastSubWord = submittedWords[submittedWords.length - 1]?.word;
+
+          let startChar = -1;
+          let endChar = -1;
+
+          for (let si = 0; si <= rawSourceWords.length - submittedWords.length; si++) {
+            if (rawSourceWords[si]?.word === firstSubWord) {
+              let allMatch = true;
+              for (let k = 0; k < submittedWords.length; k++) {
+                if (rawSourceWords[si + k]?.word !== submittedWords[k]?.word) {
+                  allMatch = false;
+                  break;
+                }
+              }
+              if (allMatch) {
+                startChar = rawSourceWords[si]!.start;
+                endChar = rawSourceWords[si + submittedWords.length - 1]!.end;
+                break;
+              }
+            }
+          }
+
+          if (startChar !== -1 && endChar !== -1) {
+            const beforeChar = Math.max(0, startChar - 120);
+            const afterChar = Math.min(rawSource.length, endChar + 120);
+            exactBefore = (beforeChar > 0 ? "... " : "") + rawSource.slice(beforeChar, startChar).trimStart();
+            exactSourceMatchedText = rawSource.slice(startChar, endChar);
+            exactAfter = rawSource.slice(endChar, afterChar).trimEnd() + (afterChar < rawSource.length ? " ..." : "");
+          }
         }
 
         verifiedSources.push({
           ...candidate,
           similarityPercent: 100,
           matchedWordCount: submittedWords.length,
-          verificationStatus: "VERIFIED",
+          matchedSnippet: submittedText,
+          matchedSourceSnippet: exactSourceMatchedText,
+          matchedSourceContext: {
+            before: exactBefore,
+            match: exactSourceMatchedText,
+            after: exactAfter,
+          },
+          verificationStatus: candidate.verificationStatus || "VERIFIED",
         });
 
         matchedSpans.push({
@@ -307,11 +408,85 @@ export class DeterministicMatcher {
           Math.round((distinctSourceMatchedWords / totalWords) * 100),
         );
 
+        const exactMatchingSubmittedExcerpt = submittedText.slice(
+          submittedWords[merged[0]![0]]!.start,
+          submittedWords[merged[merged.length - 1]![1]]!.end,
+        );
+
+        // Extract exact corresponding source-side passage and surrounding context from candidate.originalSnippet
+        let sourceMatchedText = exactMatchingSubmittedExcerpt;
+        let sourceContextBefore = "";
+        let sourceContextAfter = "";
+
+        if (candidate.originalSnippet) {
+          const rawSource = candidate.originalSnippet;
+          const rawSourceWords = DeterministicMatcher.extractWords(rawSource);
+          const rawSourceWordsFlat = rawSourceWords.map((w) => w.word);
+
+          // Find the matching sequence of submitted words in the source words
+          const firstMatchedWord = submittedWords[merged[0]![0]]!.word;
+          let sourceStartWordIdx = -1;
+          let sourceEndWordIdx = -1;
+
+          for (let si = 0; si <= rawSourceWordsFlat.length - 4; si++) {
+            if (rawSourceWordsFlat[si] === firstMatchedWord) {
+              // Check if consecutive words match
+              let matchLen = 0;
+              for (let mi = 0; mi < merged.length; mi++) {
+                const subStart = merged[mi]![0];
+                const subEnd = merged[mi]![1];
+                for (let k = subStart; k <= subEnd; k++) {
+                  if (si + matchLen < rawSourceWordsFlat.length && rawSourceWordsFlat[si + matchLen] === submittedWords[k]!.word) {
+                    matchLen++;
+                  }
+                }
+              }
+              if (matchLen >= 4) {
+                sourceStartWordIdx = si;
+                sourceEndWordIdx = si + matchLen - 1;
+                break;
+              }
+            }
+          }
+
+          if (sourceStartWordIdx !== -1 && sourceEndWordIdx !== -1) {
+            const startChar = rawSourceWords[sourceStartWordIdx]!.start;
+            const endChar = rawSourceWords[sourceEndWordIdx]!.end;
+            sourceMatchedText = rawSource.slice(startChar, endChar);
+
+            const beforeChar = Math.max(0, startChar - 120);
+            const afterChar = Math.min(rawSource.length, endChar + 120);
+
+            sourceContextBefore = (beforeChar > 0 ? "... " : "") + rawSource.slice(beforeChar, startChar).trimStart();
+            sourceContextAfter = rawSource.slice(endChar, afterChar).trimEnd() + (afterChar < rawSource.length ? " ..." : "");
+          } else {
+            // Secondary fallback: normalized query search
+            const normQuery = exactMatchingSubmittedExcerpt.toLowerCase().replace(/\s+/g, " ").trim();
+            const rawSourceNorm = rawSource.toLowerCase().replace(/\s+/g, " ");
+            const queryIdx = rawSourceNorm.indexOf(normQuery);
+
+            if (queryIdx !== -1) {
+              const beforeChar = Math.max(0, queryIdx - 120);
+              const afterChar = Math.min(rawSource.length, queryIdx + exactMatchingSubmittedExcerpt.length + 120);
+              sourceContextBefore = (beforeChar > 0 ? "... " : "") + rawSource.slice(beforeChar, queryIdx).trimStart();
+              sourceMatchedText = rawSource.slice(queryIdx, queryIdx + exactMatchingSubmittedExcerpt.length);
+              sourceContextAfter = rawSource.slice(queryIdx + exactMatchingSubmittedExcerpt.length, afterChar).trimEnd() + (afterChar < rawSource.length ? " ..." : "");
+            }
+          }
+        }
+
         verifiedSources.push({
           ...candidate,
           similarityPercent: sourceSimPercent,
           matchedWordCount: distinctSourceMatchedWords,
-          verificationStatus: "VERIFIED",
+          matchedSnippet: exactMatchingSubmittedExcerpt || candidate.matchedSnippet,
+          matchedSourceSnippet: sourceMatchedText,
+          matchedSourceContext: {
+            before: sourceContextBefore,
+            match: sourceMatchedText,
+            after: sourceContextAfter,
+          },
+          verificationStatus: candidate.verificationStatus || "VERIFIED",
         });
 
         matchedSpans.push({
@@ -402,9 +577,7 @@ export class DeterministicMatcher {
         src.sourceRole = "PRIMARY";
         src.matchedWordCount =
           src.matchedWordCount ||
-          (src.similarityPercent >= 90
-            ? totalWords
-            : Math.round((src.similarityPercent / 100) * totalWords));
+          Math.round((src.similarityPercent / 100) * totalWords);
         finalizedSources.push(src);
         if (fingerprint.length > 0) seenFingerprints.set(fingerprint, src.id);
       } else {
@@ -418,9 +591,7 @@ export class DeterministicMatcher {
         }
         src.matchedWordCount =
           src.matchedWordCount ||
-          (src.similarityPercent >= 90
-            ? totalWords
-            : Math.round((src.similarityPercent / 100) * totalWords));
+          Math.round((src.similarityPercent / 100) * totalWords);
         finalizedSources.push(src);
       }
     }
@@ -431,8 +602,8 @@ export class DeterministicMatcher {
       Math.round((finalMatchedWords / totalWords) * 100),
     );
     const isExactMatch =
-      literalSimilarityPercent >= 90 &&
-      finalizedSources.some((s) => s.similarityPercent >= 90);
+      literalSimilarityPercent === 100 &&
+      finalizedSources.some((s) => s.similarityPercent === 100);
 
     let matchType: DeterministicPlagiarismReport["matchType"] =
       "NO_SIGNIFICANT_MATCH";

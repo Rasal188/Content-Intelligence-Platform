@@ -69,7 +69,7 @@ export const RiskIndicator: FC<RiskIndicatorProps> = ({
       <span
         className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset ${config.style} ${className}`}
         title={
-          "Based on combined AI writing indicators, originality, and structural repetition."
+          "Based on combined AI writing indicators, sentence burstiness, and structural predictability."
         }
       >
         <Icon className="h-3.5 w-3.5" />
@@ -77,8 +77,8 @@ export const RiskIndicator: FC<RiskIndicatorProps> = ({
       </span>
       {showSubtitle && (
         <span className="text-[10px] text-primary/40 mt-1">
-          Based on combined AI indicators, originality, and structural
-          repetition.
+          Based on combined AI writing indicators, sentence burstiness, and
+          structural predictability.
         </span>
       )}
     </div>

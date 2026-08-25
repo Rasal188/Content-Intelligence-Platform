@@ -59,7 +59,7 @@ export type UploadState = "idle" | "dragging" | "selected" | "error";
  */
 export interface AnalysisRequest {
   source: InputSource;
-  analysisType: AnalysisType;
+  analysisType?: AnalysisType | null;
   file?: File;
   text?: string;
   url?: string;

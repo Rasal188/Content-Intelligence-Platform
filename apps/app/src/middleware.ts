@@ -16,29 +16,21 @@ const I18nMiddleware = createI18nMiddleware({
 const isSignInPage = createRouteMatcher(["/login"]);
 
 export default convexAuthNextjsMiddleware(async (request, { convexAuth }) => {
-  // Bypass i18n rewrites for all API routes
+  // Protect API routes from unauthenticated direct invocation
+  const isAuthenticated = await convexAuth.isAuthenticated();
   if (request.nextUrl.pathname.startsWith("/api/")) {
+    if (!isAuthenticated) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     return NextResponse.next();
   }
-
-  /*
-  -----------------------------------
-  TEMPORARY DEVELOPMENT BYPASS
-  Remove after Convex deployment is configured.
-  -----------------------------------
-  */
-  if (process.env.DEV_BYPASS_AUTH === "true") {
-    return I18nMiddleware(request);
-  }
-
-  const isAuthenticated = await convexAuth.isAuthenticated();
   const isSignIn = isSignInPage(request);
   if (isSignIn && isAuthenticated) {
-    console.log("redirecting to /", {
+    console.log("redirecting to /ai-content-analyzer", {
       isSignIn,
       isAuthenticated,
     });
-    return nextjsMiddlewareRedirect(request, "/");
+    return nextjsMiddlewareRedirect(request, "/ai-content-analyzer");
   }
   if (!isSignIn && !isAuthenticated) {
     console.log("redirecting to /login", {
@@ -46,6 +38,9 @@ export default convexAuthNextjsMiddleware(async (request, { convexAuth }) => {
       isAuthenticated,
     });
     return nextjsMiddlewareRedirect(request, "/login");
+  }
+  if (isAuthenticated && request.nextUrl.pathname === "/") {
+    return nextjsMiddlewareRedirect(request, "/ai-content-analyzer");
   }
   console.log("no redirect", {
     isSignIn,

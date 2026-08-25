@@ -4,9 +4,9 @@ import { z } from "zod";
 export const env = createEnv({
   client: {
     NEXT_PUBLIC_CONVEX_URL: z.string().url(),
-    NEXT_PUBLIC_OPENPANEL_CLIENT_ID: z.optional(z.string().min(1)),
-    NEXT_PUBLIC_APP_URL: z.optional(z.string().url()),
-    NEXT_PUBLIC_CAL_LINK: z.optional(z.string().min(1)),
+    NEXT_PUBLIC_OPENPANEL_CLIENT_ID: z.string().optional(),
+    NEXT_PUBLIC_APP_URL: z.string().url().optional(),
+    NEXT_PUBLIC_CAL_LINK: z.string().optional(),
   },
   runtimeEnv: {
     NEXT_PUBLIC_CONVEX_URL: process.env.NEXT_PUBLIC_CONVEX_URL,

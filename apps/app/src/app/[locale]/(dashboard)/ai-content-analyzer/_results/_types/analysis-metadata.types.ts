@@ -17,8 +17,8 @@ export interface AnalysisMetadata {
   promptVersion?: string;
   failureReason?: string;
   analysisVersion?: string;
-  processingTimestamp?: string;
-  documentLanguage?: string;
-  documentComplexity?: string;
   analysisDepth?: string;
+  classifiability?: "CLASSIFIABLE" | "LOW_CONFIDENCE" | "INSUFFICIENT" | "NON_LINGUISTIC";
+  classifiable?: boolean;
+  unclassifiableReason?: string;
 }

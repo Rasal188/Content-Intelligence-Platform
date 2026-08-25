@@ -69,6 +69,9 @@ export default function AIContentAnalyzerPage() {
     activeJob,
     queuedJobs,
     historyJobs,
+    hasValidContent,
+    hasSelectedMode,
+    isSubmitDisabled,
     handleTabChange,
     setAnalysisType,
     handleFileSelect,
@@ -206,11 +209,26 @@ export default function AIContentAnalyzerPage() {
             />
 
             {/* Submit Action Button */}
-            <div className="flex justify-end border-t border-border/50 pt-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-t border-border/50 pt-4">
+              <div>
+                {!hasSelectedMode && (
+                  <p className="text-xs text-yellow-600 dark:text-yellow-400">
+                    Please select an analysis mode above to continue.
+                  </p>
+                )}
+                {hasSelectedMode && !hasValidContent && (
+                  <p className="text-xs text-primary/50">
+                    Provide document file or paste at least 20 characters of text.
+                  </p>
+                )}
+              </div>
+
               <Button
                 onClick={runAnalysis}
-                className="min-w-[160px]"
-                disabled={!!activeJob}
+                className={`min-w-[160px] ${
+                  isSubmitDisabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"
+                }`}
+                disabled={isSubmitDisabled}
               >
                 {activeJob ? (
                   <>

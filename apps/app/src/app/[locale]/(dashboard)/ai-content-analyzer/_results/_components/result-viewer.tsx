@@ -13,6 +13,7 @@ import {
 import type { FC } from "react";
 import type { AnalysisJobItem } from "../../_jobs/analysis-job.types";
 import { useAnalysisResult } from "../_hooks/use-analysis-result";
+import { exportReportToPdf } from "../_services/pdf-exporter.service";
 import { HighlightedTextViewer } from "./highlighted-text-viewer";
 import { HumanizerResultCard } from "./humanizer-result-card";
 import { MatchedSources } from "./matched-sources";
@@ -50,6 +51,7 @@ export const ResultViewer: FC<ResultViewerProps> = ({
     jobId,
     documentName,
     textContent,
+    job?.analysisType,
   );
 
   if (isHumanizerJob && job) {
@@ -129,7 +131,13 @@ export const ResultViewer: FC<ResultViewerProps> = ({
             </div>
 
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  exportReportToPdf(viewModel, rawResult, "plagiarism")
+                }
+              >
                 <Download className="mr-1.5 h-3.5 w-3.5" /> Export PDF
               </Button>
               <Button
@@ -173,7 +181,13 @@ export const ResultViewer: FC<ResultViewerProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                exportReportToPdf(viewModel, rawResult, "ai_detection")
+              }
+            >
               <Download className="mr-1.5 h-3.5 w-3.5" /> Export PDF
             </Button>
             <Button
@@ -199,9 +213,6 @@ export const ResultViewer: FC<ResultViewerProps> = ({
 
         {/* Highlighted Passages */}
         <HighlightedTextViewer highlights={rawResult.highlights} />
-
-        {/* Matched Sources */}
-        <MatchedSources sources={rawResult.matchedSources} />
 
         {/* Recommendations Panel */}
         <RecommendationsPanel recommendations={rawResult.recommendations} />

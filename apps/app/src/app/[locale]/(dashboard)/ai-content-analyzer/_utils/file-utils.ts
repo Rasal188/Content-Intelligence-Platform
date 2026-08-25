@@ -61,6 +61,9 @@ export function validateFile(file: File | null | undefined): ValidationResult {
   if (!isSupportedFileType(file)) {
     return { isValid: false, error: VALIDATION_MESSAGES.UNSUPPORTED_FILE_TYPE };
   }
+  if (file.size === 0) {
+    return { isValid: false, error: VALIDATION_MESSAGES.EMPTY_FILE };
+  }
   if (file.size > MAX_UPLOAD_SIZE_BYTES) {
     return { isValid: false, error: VALIDATION_MESSAGES.FILE_TOO_LARGE };
   }

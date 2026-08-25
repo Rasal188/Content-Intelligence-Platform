@@ -1,6 +1,12 @@
+import { isAuthenticatedNextjs } from "@convex-dev/auth/nextjs/server";
 import { NextResponse } from "next/server";
+import {
+  checkApiRateLimit,
+  createRateLimitExceededResponse,
+} from "@/lib/rate-limiter";
 import { CompactKeyMapper } from "../../../[locale]/(dashboard)/ai-content-analyzer/_results/_services/forensics/compact-key-mapper";
 import { WebPlagiarismMatcher } from "../../../[locale]/(dashboard)/ai-content-analyzer/_results/_services/forensics/web-plagiarism-matcher.service";
+import { InputQualityAnalyzerService } from "../../../[locale]/(dashboard)/ai-content-analyzer/_results/_services/input-quality-analyzer.service";
 import { PromptBuilderService } from "../../../[locale]/(dashboard)/ai-content-analyzer/_results/_services/prompt-builder.service";
 import { PROMPT_VERSION } from "../../../[locale]/(dashboard)/ai-content-analyzer/_results/_services/prompt-config";
 import { ResultResponseValidator } from "../../../[locale]/(dashboard)/ai-content-analyzer/_results/_services/result-response-validator.service";
@@ -13,26 +19,195 @@ import { ResultResponseValidator } from "../../../[locale]/(dashboard)/ai-conten
  * then processed identically by ResultResponseValidator. The frontend is unchanged.
  */
 export async function POST(req: Request) {
+  // 1. Authentication check
+  if (!(await isAuthenticatedNextjs())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // 2. Server-side Rate Limit check (10 requests/min per user)
+  const rateLimit = await checkApiRateLimit("ollima-analyze", 10, 60 * 1000);
+  if (!rateLimit.allowed) {
+    return createRateLimitExceededResponse(rateLimit.retryAfterSeconds);
+  }
+
+  // 1. Enforce raw HTTP request body size limit (512 KB)
+  const contentLength = req.headers.get("content-length");
+  if (contentLength && Number.parseInt(contentLength, 10) > 512 * 1024) {
+    return NextResponse.json(
+      { error: "Request payload exceeds maximum allowed size (512 KB)." },
+      { status: 413 },
+    );
+  }
+
+  // 2. Parse JSON body with clean error handling (400 for malformed input)
+  let body: {
+    text?: unknown;
+    jobId?: unknown;
+    documentName?: unknown;
+    analysisType?: unknown;
+  };
   try {
-    const { text, jobId, documentName, analysisType } = await req.json();
+    body = await req.json();
+  } catch {
+    return NextResponse.json(
+      { error: "Invalid or malformed JSON payload." },
+      { status: 400 },
+    );
+  }
+
+  const text = typeof body.text === "string" ? body.text : "";
+  const jobId = typeof body.jobId === "string" ? body.jobId : "";
+  const documentName =
+    typeof body.documentName === "string" ? body.documentName : "";
+  const analysisType =
+    typeof body.analysisType === "string" ? body.analysisType : "";
+
+  if (!text || text.trim().length === 0) {
+    return NextResponse.json(
+      { error: "Text payload is required for analysis." },
+      { status: 400 },
+    );
+  }
+
+  // 3. Enforce maximum text character limit (50,000 chars)
+  if (text.length > 50000) {
+    return NextResponse.json(
+      { error: "Text payload exceeds the maximum allowed length." },
+      { status: 413 },
+    );
+  }
+
+  // 4. Deterministic Input Quality & Classifiability Gate
+  const qualityEvaluation = InputQualityAnalyzerService.evaluate(text);
+  if (!qualityEvaluation.classifiable) {
+    const unclassifiableDomainResult = {
+      id: `res-${jobId || Date.now().toString(36)}`,
+      jobId: jobId || `job-${Date.now().toString(36)}`,
+      overallRiskLevel: "low" as const,
+      document: {
+        id: `doc-snap-${jobId || Date.now().toString(36)}`,
+        name: documentName || "unclassifiable-content.txt",
+        size: text.length * 2,
+        type: "text/plain",
+        language: qualityEvaluation.metrics.detectedScript,
+        hash: `sha256-${jobId || Date.now().toString(36)}`,
+        wordCount: qualityEvaluation.metrics.wordCount,
+        characterCount: text.length,
+        pageCount: 1,
+        createdAt: new Date().toISOString(),
+      },
+      scores: {
+        overallOriginality: {
+          id: "score-orig",
+          name: "Originality Score",
+          value: 0,
+          confidence: 0,
+          weight: 1.0,
+          description: "Unclassifiable content.",
+        },
+        aiProbability: {
+          id: "score-ai",
+          name: "AI Content",
+          value: 0,
+          confidence: 0,
+          weight: 1.0,
+          description: "Insufficient linguistic structure for authorship classification.",
+        },
+        plagiarismSimilarity: {
+          id: "score-plag",
+          name: "Similarity Risk",
+          value: 0,
+          confidence: 0,
+          weight: 0.8,
+          description: "Similarity evaluated on classifiable text only.",
+        },
+        readabilityQuality: {
+          id: "score-read",
+          name: "Readability Index",
+          value: 0,
+          confidence: 0,
+          weight: 0.5,
+          description: "Readability non-applicable.",
+        },
+      },
+      statistics: {
+        characterCount: text.length,
+        wordCount: qualityEvaluation.metrics.wordCount,
+        sentenceCount: qualityEvaluation.metrics.sentenceCount,
+        paragraphCount: 1,
+        averageSentenceLengthWords: qualityEvaluation.metrics.wordCount,
+        fleschKincaidReadingEase: 0,
+        fleschKincaidGradeLevel: 0,
+        lexicalDiversity: qualityEvaluation.metrics.uniqueWordRatio * 100,
+        syntacticComplexity: 0,
+        burstinessScore: 0,
+        perplexityScore: 0,
+      },
+      metadata: {
+        schemaVersion: "2.0.0",
+        engineVersion: "v2.5-ollima",
+        providerVersion: "ollima-forensic-v2",
+        providerName: "Ollima Input Quality Gate",
+        executionTimeMs: 1,
+        generatedAt: new Date().toISOString(),
+        checksum: `chk-${jobId || Date.now().toString(36)}-gate`,
+        processingTimeSeconds: 0.001,
+        isMockData: false,
+        requestId: `req-gate-${Date.now().toString(36)}`,
+        analysisVersion: "2.0.0",
+        promptVersion: PROMPT_VERSION,
+        classifiability: qualityEvaluation.status,
+        classifiable: false,
+        unclassifiableReason: qualityEvaluation.reason,
+      },
+      highlights: [],
+      matchedSources: [],
+      recommendations: [],
+      warnings: [
+        {
+          id: "warn-unclassifiable",
+          severity: "low" as const,
+          category: "Linguistic Structure",
+          message: qualityEvaluation.reason,
+        },
+      ],
+      extensions: {
+        summary: {
+          executiveSummary: qualityEvaluation.reason,
+          strengths: [],
+          weaknesses: ["Insufficient linguistic structure"],
+          recommendedImprovements: ["Submit complete sentences or natural language prose for authorship classification."],
+          riskExplanation: "Non-classifiable text.",
+          confidenceExplanation: "Zero confidence due to lack of linguistic structure.",
+        },
+      },
+    };
+
+    return NextResponse.json({
+      providerRequestId: "gate-eval",
+      result: unclassifiableDomainResult,
+    });
+  }
+
+  try {
 
     const apiKey = process.env.OLLIMA_API_KEY;
     const apiBaseUrl =
       process.env.OLLIMA_API_BASE_URL || "https://api.ollima.com";
 
     // Dedicated model routing:
-    // ✍️ Humanizer → Claude Sonnet 4.6 (claude-sonnet-4.6)
+    // ✍️ Humanizer → Gemini 3.6 Flash High (gemini-3.6-flash-high)
     // 🔎 Plagiarism Analysis → Gemini 3.1 Pro Low (gemini-3.1-pro-low)
-    // 🤖 AI-Text Detection → Claude Sonnet 4.6 (claude-sonnet-4.6)
+    // 🤖 AI-Text Detection → Gemini 3.6 Flash High (gemini-3.6-flash-high)
     // 🌐 Source Discovery / Web Verification → Gemini 3.6 Flash High (gemini-3.6-flash-high)
-    let model = process.env.OLLIMA_MODEL || "claude-sonnet-4.6";
+    let model = process.env.OLLIMA_MODEL || "gemini-3.6-flash-high";
     if (analysisType === "plagiarism" || analysisType === "plagiarism-check") {
       model = process.env.OLLIMA_PLAGIARISM_MODEL || "gemini-3.1-pro-low";
     } else if (
       analysisType === "ai-detection" ||
       analysisType === "ai-content-detection"
     ) {
-      model = process.env.OLLIMA_AI_DETECTION_MODEL || "claude-sonnet-4.6";
+      model = process.env.OLLIMA_AI_DETECTION_MODEL || "gemini-3.6-flash-high";
     }
 
     const promptVersion = process.env.PROMPT_VERSION || PROMPT_VERSION;

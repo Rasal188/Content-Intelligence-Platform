@@ -35,7 +35,7 @@ export const MetadataCard: FC<MetadataCardProps> = ({ metadata }) => {
             Model
           </span>
           <span className="text-primary/90 font-semibold">
-            {metadata.providerModel || "claude-sonnet-4.6"}
+            {metadata.providerModel || "gemini-3.6-flash-high"}
           </span>
         </div>
         <div>

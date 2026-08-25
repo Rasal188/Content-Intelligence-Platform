@@ -47,6 +47,114 @@ const Switch = ({ label, onClick }: { label: string; onClick: () => void }) => (
   </button>
 );
 
+function getAuthErrorMessage(err: unknown, currentMode?: Mode): string {
+  if (!err) {
+    return "Unable to complete authentication. Please try again.";
+  }
+
+  // Extract raw message across various Convex error formats
+  let rawMsg = "";
+  if (typeof err === "string") {
+    rawMsg = err;
+  } else if (typeof err === "object" && err !== null) {
+    const obj = err as Record<string, unknown>;
+    if (typeof obj.data === "string") {
+      rawMsg = obj.data;
+    } else if (typeof obj.message === "string") {
+      rawMsg = obj.message;
+    } else if (obj.cause && typeof (obj.cause as Record<string, unknown>).message === "string") {
+      rawMsg = (obj.cause as Record<string, unknown>).message as string;
+    } else {
+      rawMsg = String(err);
+    }
+  } else {
+    rawMsg = String(err);
+  }
+
+  const lower = rawMsg.toLowerCase();
+
+  // 1. Existing account / duplicate signup (Prioritized to prevent falling into mode defaults)
+  if (
+    lower.includes("already exists") ||
+    lower.includes("account already exists") ||
+    lower.includes("email already in use") ||
+    lower.includes("account with this email")
+  ) {
+    return "An account with this email already exists. Please sign in.";
+  }
+
+  // 2. Password policy requirements (Sign up / password creation / reset)
+  if (
+    lower.includes("password must be at least") ||
+    lower.includes("8 characters") ||
+    lower.includes("include upper") ||
+    lower.includes("password requirements") ||
+    lower.includes("missing `password`")
+  ) {
+    return "Password must be at least 8 characters and include upper, lower, and a number.";
+  }
+
+  // 3. Verification code & OTP errors
+  if (
+    lower.includes("invalid code") ||
+    lower.includes("could not verify code") ||
+    lower.includes("expired") ||
+    lower.includes("verification code") ||
+    currentMode === "verify" ||
+    (currentMode === "reset" && lower.includes("code"))
+  ) {
+    if (lower.includes("invalidsecret") || lower.includes("invalid credentials")) {
+      return "Invalid email or password.";
+    }
+    return "Invalid or expired verification code.";
+  }
+
+  // 4. Rate limiting / brute force
+  if (
+    lower.includes("toomanyfailedattempts") ||
+    lower.includes("rate limit") ||
+    lower.includes("too many attempts")
+  ) {
+    return "Too many failed attempts. Please try again later.";
+  }
+
+  // 5. Invalid credentials / wrong password / nonexistent account
+  if (
+    lower.includes("invalidsecret") ||
+    lower.includes("invalidaccountid") ||
+    lower.includes("invalid credentials") ||
+    lower.includes("account not found") ||
+    lower.includes("wrong password") ||
+    lower.includes("user not found") ||
+    currentMode === "signIn"
+  ) {
+    return "Invalid email or password.";
+  }
+
+  // 6. Network / connection errors
+  if (
+    lower.includes("networkerror") ||
+    lower.includes("failed to fetch") ||
+    lower.includes("connection") ||
+    lower.includes("timeout")
+  ) {
+    return "Unable to connect to authentication server. Please check your connection.";
+  }
+
+  // If a clean specific message exists and isn't technical framework noise, display it
+  if (
+    !rawMsg.includes("Server Error") &&
+    !rawMsg.includes("Uncaught Error") &&
+    !rawMsg.includes("Request ID:") &&
+    rawMsg.length > 0 &&
+    rawMsg.length < 120
+  ) {
+    return rawMsg;
+  }
+
+  return "Unable to complete authentication. Please try again.";
+}
+
 export function AuthForm() {
   const { signIn } = useAuthActions();
   const [mode, setMode] = useState<Mode>("signIn");
@@ -65,12 +173,7 @@ export function AuthForm() {
     try {
       await fn();
     } catch (err) {
-      const data = (err as { data?: unknown })?.data;
-      setError(
-        typeof data === "string"
-          ? data
-          : (err as Error)?.message || "Something went wrong.",
-      );
+      setError(getAuthErrorMessage(err, mode));
     } finally {
       setPending(false);
     }
@@ -218,19 +321,6 @@ export function AuthForm() {
           />
         </Shell>
       )}
-
-      <div className="flex w-72 items-center gap-3 text-xs text-muted-foreground">
-        <span className="h-px flex-1 bg-border" />
-        or
-        <span className="h-px flex-1 bg-border" />
-      </div>
-      <Button
-        variant="outline"
-        className="w-72 font-mono"
-        onClick={() => signIn("google")}
-      >
-        Continue with Google
-      </Button>
     </div>
   );
 }

@@ -57,12 +57,34 @@ export function validateAnalysisRequest(
     return { isValid: false, error: VALIDATION_MESSAGES.UNKNOWN_ERROR };
   }
 
+  // 1. Validate analysis mode selection
+  if (!request.analysisType) {
+    return {
+      isValid: false,
+      error: VALIDATION_MESSAGES.NO_MODE_OR_CONTENT,
+    };
+  }
+
+  // 2. Validate input content based on active source
+  let contentValidation: ValidationResult;
   switch (request.source) {
     case "file":
-      return validateFile(request.file);
+      contentValidation = validateFile(request.file);
+      break;
     case "paste":
-      return validateTextContent(request.text);
+      contentValidation = validateTextContent(request.text);
+      break;
     default:
       return { isValid: false, error: VALIDATION_MESSAGES.UNKNOWN_ERROR };
   }
+
+  if (!contentValidation.isValid) {
+    // If either mode or content is missing, report the standardized user message
+    return {
+      isValid: false,
+      error: VALIDATION_MESSAGES.NO_MODE_OR_CONTENT,
+    };
+  }
+
+  return { isValid: true };
 }

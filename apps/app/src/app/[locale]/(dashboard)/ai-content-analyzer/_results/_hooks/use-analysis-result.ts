@@ -18,6 +18,7 @@ export function useAnalysisResult(
   jobId?: string,
   documentName?: string,
   textContent?: string,
+  analysisType?: string,
 ) {
   const [resultDomain, setResultDomain] = useState<AnalysisResultDomain | null>(
     null,
@@ -44,6 +45,7 @@ export function useAnalysisResult(
         jobId,
         documentName,
         textContent,
+        analysisType,
       );
       const vm = viewModelService.toViewModel(domain);
       setResultDomain(domain);
@@ -55,7 +57,7 @@ export function useAnalysisResult(
     } finally {
       setIsLoading(false);
     }
-  }, [jobId, documentName, textContent, builderService, viewModelService]);
+  }, [jobId, documentName, textContent, analysisType, builderService, viewModelService]);
 
   useEffect(() => {
     loadResult();

@@ -257,30 +257,42 @@ export class LinguisticAnalyzerService {
       firstPersonNarrativeScore = Math.min(100, firstPersonNarrativeScore + 30);
 
     // 11. Composite Statistical AI Probability (0-100)
-    // Low burstiness + high transitions + humanizer artifacts + zipf deviation + duplicate sentences = AI/Bypass AI
-    // High burstiness + natural zipf law + first-person narrative = Human
-    const burstinessAiSignal = Math.max(0, 100 - burstinessScore);
-    const zipfAiSignal = Math.max(0, 100 - zipfDistributionScore);
+    // For short texts (< 35 words or < 3 sentences), burstiness/entropy variance is inherently unreliable.
+    // In such cases, don't penalize as AI; stay in a neutral baseline.
+    const isShortSample = wordCount < 35 || sentenceCount < 3;
+
+    const burstinessAiSignal = isShortSample
+      ? 20 // Low baseline signal for short samples
+      : Math.max(0, 100 - burstinessScore);
+
+    const zipfAiSignal = isShortSample
+      ? 20
+      : Math.max(0, 100 - zipfDistributionScore);
+
     const transitionAiSignal = aiTransitionPenaltyScore;
     const bypassAiSignal = humanizerArtifactScore;
     const humanVoiceSignal = firstPersonNarrativeScore;
     const repetitionPenalty = Math.min(60, duplicateSentenceCount * 30);
 
     let statAi =
-      burstinessAiSignal * 0.28 +
+      burstinessAiSignal * 0.25 +
       zipfAiSignal * 0.15 +
-      transitionAiSignal * 0.32 +
+      transitionAiSignal * 0.35 +
       bypassAiSignal * 0.2 +
       passiveAiPenalty * 0.15 +
       repetitionPenalty * 0.3 -
-      humanVoiceSignal * 0.55 +
-      10;
+      humanVoiceSignal * 0.6;
+
+    // Normal baseline offset only for longer text with absent human anchors
+    if (!isShortSample && firstPersonNarrativeScore === 0) {
+      statAi += 5;
+    }
 
     statAi = Math.max(2, Math.min(98, Math.round(statAi)));
 
     // Decisive Boundary Anchors:
     // If text has genuine first-person storytelling details, clamp AI down
-    if (firstPersonNarrativeScore >= 45) {
+    if (firstPersonNarrativeScore >= 30) {
       statAi = Math.min(8, statAi);
     }
     // If text contains 2+ distinct AI cliché transitions or humanizer bypass markers, clamp AI up
@@ -293,6 +305,11 @@ export class LinguisticAnalyzerService {
     }
     if (aiPatternMatches >= 3) {
       statAi = Math.max(94, statAi);
+    }
+
+    // For short normal human text with 0 AI cliché patterns and 0 bypass markers, statistical AI must be low
+    if (isShortSample && aiPatternMatches === 0 && humanizerMatches === 0) {
+      statAi = Math.min(15, statAi);
     }
 
     const statHuman = Math.max(0, Math.min(100, 100 - statAi));

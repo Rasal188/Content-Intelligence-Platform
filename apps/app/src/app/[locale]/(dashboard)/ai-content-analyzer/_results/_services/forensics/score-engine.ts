@@ -75,91 +75,150 @@ export class ScoreEngine {
 
     for (const key of aiIndicators) {
       const w = (weights.aiForensics as Record<string, number>)[key] || 5;
-      const metric = aiForensics[key] || {};
-      const score = typeof metric.score === "number" ? metric.score : 50;
-      totalAiWeight += w;
-      weightedAiSum += score * w;
+      const metric = aiForensics[key];
+      if (metric && typeof metric.score === "number") {
+        totalAiWeight += w;
+        weightedAiSum += metric.score * w;
+      }
     }
 
     for (const key of humanIndicators) {
       const w = (weights.aiForensics as Record<string, number>)[key] || 8;
-      const metric = aiForensics[key] || {};
-      const score = typeof metric.score === "number" ? metric.score : 50;
-      totalHumanWeight += w;
-      weightedHumanSum += score * w;
+      const metric = aiForensics[key];
+      if (metric && typeof metric.score === "number") {
+        totalHumanWeight += w;
+        weightedHumanSum += metric.score * w;
+      }
     }
 
-    const rawAiAvg = totalAiWeight > 0 ? weightedAiSum / totalAiWeight : 50;
+    const rawAiAvg = totalAiWeight > 0 ? weightedAiSum / totalAiWeight : (aiForensics.templateLanguage?.score ?? 50);
     const rawHumanAvg =
-      totalHumanWeight > 0 ? weightedHumanSum / totalHumanWeight : 50;
+      totalHumanWeight > 0 ? weightedHumanSum / totalHumanWeight : (aiForensics.personalExperience?.score ?? 50);
 
-    // 3. Enterprise Deterministic Hybrid Blending
-    // Blends 50% LLM Semantic Evaluation + 50% Deterministic Mathematical Metrics
-    const blendedAi = Math.round(rawAiAvg * 0.5 + statAi * 0.5);
-    const blendedHuman = Math.round(rawHumanAvg * 0.5 + statHuman * 0.5);
+    // 3. Enterprise Multi-Signal Evidence Aggregation
+    const originalExpression = rawResponse.originalExpression || {};
+    const similarityAnalysis = rawResponse.similarityAnalysis || {};
+
+    // Extract key contextual indicators (0-100)
+    const personalExpScore = typeof aiForensics.personalExperience?.score === "number" ? aiForensics.personalExperience.score : 0;
+    const narrativeAuthScore = typeof aiForensics.narrativeAuthenticity?.score === "number" ? aiForensics.narrativeAuthenticity.score : 0;
+    const contextSwitchingScore = typeof aiForensics.contextSwitching?.score === "number" ? aiForensics.contextSwitching.score : 0;
+    const abruptStyleShiftsScore = typeof similarityAnalysis.abruptStyleShifts?.score === "number" ? similarityAnalysis.abruptStyleShifts.score : 0;
+    const templateLangScore = typeof aiForensics.templateLanguage?.score === "number" ? aiForensics.templateLanguage.score : (rawAiAvg || 50);
+    const boilerplateScore = typeof originalExpression.boilerplate?.score === "number" ? originalExpression.boilerplate.score : (rawAiAvg || 50);
+
+    // Composite human narrative strength from both LLM and deterministic text analysis
+    const humanSignalStrength = Math.max(
+      rawHumanAvg,
+      personalExpScore * 0.5 + narrativeAuthScore * 0.5,
+      linguisticMetrics?.firstPersonNarrativeScore ?? 0,
+    );
+
+    // Composite AI template strength from LLM and deterministic text analysis
+    const aiSignalStrength = Math.max(
+      rawAiAvg,
+      templateLangScore * 0.5 + boilerplateScore * 0.5,
+      humanSignalStrength >= 65 ? (linguisticMetrics?.aiTransitionPenaltyScore ?? 0) * 0.4 : (linguisticMetrics?.aiTransitionPenaltyScore ?? 0),
+    );
+
+    // Style-shift / Hybrid variance index (0-100): High when LLM detects distinct authorial shifts or co-existing strong signals
+    const hybridDiscontinuityIndex = Math.max(
+      abruptStyleShiftsScore,
+      // Only treat context switching as a hybrid shift if both AI and human signals are meaningfully elevated
+      Math.min(humanSignalStrength, aiSignalStrength) >= 30 ? contextSwitchingScore : 0,
+      (humanSignalStrength >= 40 && aiSignalStrength >= 55) ? Math.min(humanSignalStrength, aiSignalStrength) * 1.2 : 0,
+    );
+
+    // Sample-size aware weighting:
+    // When text is short (< 35 words), statistical variance is unreliable. Lean on semantic indicators.
+    const isShort = linguisticMetrics ? linguisticMetrics.wordCount < 35 || linguisticMetrics.sentenceCount < 3 : false;
+    const statWeight = isShort ? 0.25 : 0.45;
+    const semWeight = 1.0 - statWeight;
+
+    // If strong human signals co-exist with AI transitions (e.g. human narrative + technical/AI phrases),
+    // moderate the statistical AI transition penalty so a single transition doesn't erase human authorship.
+    let calibratedStatAi = statAi;
+    let calibratedStatHuman = statHuman;
+    if (humanSignalStrength >= 40 && linguisticMetrics && linguisticMetrics.aiTransitionPenaltyScore > 0) {
+      const penaltyDampening = Math.min(0.95, (humanSignalStrength - 20) / 50);
+      calibratedStatAi = Math.round(statAi * (1 - penaltyDampening) + (100 - humanSignalStrength) * penaltyDampening);
+      calibratedStatHuman = Math.max(0, 100 - calibratedStatAi);
+    }
+
+    const blendedAi = Math.round(rawAiAvg * semWeight + calibratedStatAi * statWeight);
+    const blendedHuman = Math.round(rawHumanAvg * semWeight + calibratedStatHuman * statWeight);
 
     let aiProb = blendedAi;
     let humanProb = blendedHuman;
 
-    // Firm Decision Boundaries (Modeled after GPTZero & CopyLeaks):
-    // A. Authentic Human Verification (Strong first-person anchors OR high burstiness with low AI signals)
+    // Multi-signal decision boundaries:
+    // A. Clearly Authentic Human Text (High narrative/burstiness, low AI signals, no major template patterns)
     if (
-      linguisticMetrics &&
-      linguisticMetrics.firstPersonNarrativeScore >= 25 &&
-      statAi <= 30
+      (linguisticMetrics && linguisticMetrics.firstPersonNarrativeScore >= 25) ||
+      (humanSignalStrength >= 65 && aiSignalStrength <= 60 && hybridDiscontinuityIndex < 40) ||
+      (isShort && statAi <= 15 && rawAiAvg <= 35)
     ) {
-      aiProb = Math.min(6, Math.round(blendedAi * 0.25));
-      humanProb = Math.max(
-        92,
-        Math.round(blendedHuman + (100 - blendedAi) * 0.2),
-      );
-    } else if (blendedHuman >= 65 && blendedAi <= 35) {
-      aiProb = Math.min(8, Math.round(blendedAi * 0.3));
-      humanProb = Math.max(
-        88,
-        Math.round(blendedHuman + (100 - blendedAi) * 0.15),
-      );
+      aiProb = Math.min(15, Math.round(blendedAi * 0.3));
+      humanProb = Math.max(75, Math.round(blendedHuman + (100 - blendedAi) * 0.2));
     }
-    // B. AI Verification (Dense transitions OR bypass tool artifacts OR formulaic cadence OR high statistical AI)
+    // B. Clearly Pure AI Text (Uniform cadence, no personal narrative, high template language, zero style-shifts)
     else if (
-      linguisticMetrics &&
-      (linguisticMetrics.aiTransitionPenaltyScore >= 20 ||
-        linguisticMetrics.humanizerArtifactScore >= 20 ||
-        statAi >= 55)
+      aiSignalStrength >= 75 &&
+      humanSignalStrength <= 20 &&
+      hybridDiscontinuityIndex <= 30
     ) {
-      humanProb = Math.min(2, Math.round(blendedHuman * 0.1));
-      aiProb = Math.max(94, Math.round(Math.max(blendedAi, statAi, 94)));
-    } else if (blendedAi >= 40 && blendedHuman <= 60) {
-      humanProb = Math.min(5, Math.round(blendedHuman * 0.2));
-      aiProb = Math.max(92, Math.round(blendedAi + (100 - blendedHuman) * 0.4));
+      humanProb = Math.min(3, Math.round(blendedHuman * 0.1));
+      aiProb = Math.max(95, Math.round(blendedAi + (100 - blendedHuman) * 0.3));
+    }
+    // C. Mixed / Hybrid Co-Authorship (Document exhibits both human evidence and AI templates, or strong style-shifts)
+    else if (
+      hybridDiscontinuityIndex >= 45 ||
+      (humanSignalStrength >= 30 && aiSignalStrength >= 45) ||
+      (blendedAi >= 40 && blendedHuman >= 30)
+    ) {
+      // Retain the nuanced blend without collapsing to 100% or 0%
+      aiProb = Math.max(15, Math.min(85, blendedAi));
+      humanProb = Math.max(15, Math.min(85, blendedHuman));
     }
 
     aiProb = Math.max(0, Math.min(100, aiProb));
     humanProb = Math.max(0, Math.min(100, humanProb));
 
-    // 4. Probability Distribution across the 3 chips (Human, Mixed, AI) matching GPTZero
+    // 4. Multi-Class Probability Distribution across Human, Mixed, and AI
     let chipHuman = 0;
     let chipAi = 0;
     let chipMixed = 0;
 
-    if (aiProb <= 15) {
-      // Unambiguous Human content
+    // Case 1: Decisive Human Dominance (aiProb <= 20 and humanProb >= 75 with low hybrid discontinuity)
+    if ((aiProb <= 15 || (aiProb <= 20 && humanProb >= 75)) && (hybridDiscontinuityIndex < 40 || humanSignalStrength >= 70)) {
       chipHuman = 100 - aiProb;
       chipAi = aiProb;
       chipMixed = 0;
-    } else if (aiProb >= 60) {
-      // Unambiguous AI content (Matches GPTZero: AI 100% / Mixed 0% / Human 0%)
-      chipAi = 100;
-      chipHuman = 0;
+    }
+    // Case 2: Decisive Pure AI Dominance (aiProb >= 85 and near-zero human narrative / zero style shifts)
+    else if (aiProb >= 85 && humanSignalStrength <= 15 && hybridDiscontinuityIndex < 35) {
+      chipAi = Math.min(100, aiProb);
+      chipHuman = Math.max(0, 100 - aiProb);
       chipMixed = 0;
-    } else {
-      // Intermediate / Paraphrased / Mixed Content
-      chipAi = aiProb;
-      chipHuman = Math.max(0, 100 - aiProb - 30);
-      chipMixed = 100 - chipAi - chipHuman;
+    }
+    // Case 3: Genuine Mixed / Blended Content
+    else {
+      // Calculate dynamic mixed allocation proportional to hybrid evidence and signal balance
+      const signalCloseness = Math.max(0, 100 - Math.abs(aiProb - humanProb) * 1.5);
+      const styleShiftWeight = Math.min(100, hybridDiscontinuityIndex);
+      const mixedAffinity = Math.round((signalCloseness * 0.5 + styleShiftWeight * 0.5));
+
+      // Mixed proportion ranges dynamically based on evidence (typically 20% - 60%)
+      const mixedPercent = Math.max(15, Math.min(65, Math.round(mixedAffinity * 0.6)));
+
+      const remainingPercent = 100 - mixedPercent;
+      const totalTwoSignals = aiProb + humanProb || 1;
+      chipAi = Math.round((aiProb / totalTwoSignals) * remainingPercent);
+      chipHuman = Math.round((humanProb / totalTwoSignals) * remainingPercent);
+      chipMixed = Math.max(0, 100 - chipAi - chipHuman);
     }
 
-    // Normalize so chipHuman + chipMixed + chipAi = 100%
+    // Strict Probability Invariant Normalization: chipHuman + chipMixed + chipAi = 100%
     const chipTotal = chipHuman + chipMixed + chipAi;
     if (chipTotal > 0) {
       chipHuman = Math.round((chipHuman / chipTotal) * 100);
@@ -168,7 +227,6 @@ export class ScoreEngine {
     }
 
     // 3. Calculate Original Expression Index
-    const originalExpression = rawResponse.originalExpression || {};
     let totalOrigWeight = 0;
     let weightedOrigSum = 0;
 
@@ -199,7 +257,6 @@ export class ScoreEngine {
     }
 
     // 4. Calculate Similarity Index
-    const similarityAnalysis = rawResponse.similarityAnalysis || {};
     let totalSimWeight = 0;
     let weightedSimSum = 0;
 

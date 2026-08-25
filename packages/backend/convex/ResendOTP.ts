@@ -18,7 +18,6 @@ export const ResendOTP = Email({
     { identifier: email, token }: { identifier: string; token: string },
     ctx?: { runAction: (ref: unknown, args: unknown) => Promise<unknown> },
   ) {
-    console.warn(`[auth] OTP for ${email}: ${token}`); // dev fallback (docker logs)
     try {
       await ctx?.runAction(internal.email.sendEmail, {
         to: email,
@@ -26,7 +25,7 @@ export const ResendOTP = Email({
         text: `Your sign-in code is ${token}`,
       });
     } catch (e) {
-      console.warn(`[email] OTP send failed: ${(e as Error).message}`);
+      console.error("[email] OTP delivery action encountered an error");
     }
   },
 });

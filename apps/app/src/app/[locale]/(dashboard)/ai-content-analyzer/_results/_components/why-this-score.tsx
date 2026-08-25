@@ -1,4 +1,4 @@
-import { Bot, CheckCircle2, FileText, Sparkles } from "lucide-react";
+import { Bot, CheckCircle2, FileText, Sparkles, Activity, UserCheck } from "lucide-react";
 import type { FC } from "react";
 import type { AnalysisResultDomain } from "../_types/analysis-result.types";
 
@@ -9,16 +9,18 @@ interface WhyThisScoreProps {
 export const WhyThisScore: FC<WhyThisScoreProps> = ({ rawResult }) => {
   const highlights = rawResult.highlights || [];
   const aiScore = rawResult.scores.aiProbability.value;
-  const origScore = rawResult.scores.overallOriginality.value;
-  const simScore = rawResult.scores.plagiarismSimilarity.value;
+  const humanScore =
+    rawResult.scores.humanProbability?.value ?? Math.max(0, 100 - aiScore);
+  const mixedScore = rawResult.scores.mixedProbability?.value ?? 0;
 
-  // Extract top highlights for AI and Originality
+  // Extract top highlights for AI evidence snippets
   const topSnippets = highlights.slice(0, 3);
 
   // Derive top AI indicator explanations
   const forensicsExt = (rawResult.extensions as any)?.forensics || {};
   const aiForensics = forensicsExt.aiForensics || {};
   const notableAiReasons: string[] = [];
+  const notableHumanReasons: string[] = [];
 
   const aiSignals = [
     {
@@ -85,36 +87,36 @@ export const WhyThisScore: FC<WhyThisScoreProps> = ({ rawResult }) => {
     }
   } else {
     notableAiReasons.push(
-      ...humanSignals
-        .filter((s) => {
-          const metric = (aiForensics as any)[s.key];
-          return (
-            metric && typeof metric.score === "number" && metric.score > 40
-          );
-        })
-        .slice(0, 2)
-        .map((s) => s.label),
+      "Minimal AI pattern markers identified across analyzed text passages.",
     );
-    if (notableAiReasons.length === 0) {
-      notableAiReasons.push(
-        "Natural human linguistic variance and authentic narrative pacing.",
-      );
-    }
   }
 
-  // Derive Originality insight
-  const originalityInsight =
-    origScore > 65
-      ? "Document exhibits distinctive vocabulary choices and unique thematic development."
-      : origScore < 40
-        ? "Frequent use of standardized idioms, cliché phrases, and generalized templates."
-        : "Balanced mix of conventional phrasing and localized descriptive points.";
+  notableHumanReasons.push(
+    ...humanSignals
+      .filter((s) => {
+        const metric = (aiForensics as any)[s.key];
+        return (
+          metric && typeof metric.score === "number" && metric.score > 30
+        );
+      })
+      .slice(0, 2)
+      .map((s) => s.label),
+  );
+  if (notableHumanReasons.length === 0) {
+    notableHumanReasons.push(
+      humanScore > 50
+        ? "Natural human linguistic variance and authentic narrative pacing."
+        : "Standardized informational flow with moderate structural consistency.",
+    );
+  }
 
-  // Derive Similarity insight
-  const similarityInsight =
-    simScore > 25
-      ? "Internal syntactic loops and recurring paragraph structures detected within the document."
-      : "Low internal repetition with clean structural variety throughout all sections.";
+  // Derive burstiness / cadence insight
+  const burstinessInsight =
+    aiScore > 60
+      ? "Uniform sentence lengths and predictable grammatical cadences characteristic of synthetic generation."
+      : humanScore > 60
+        ? "High sentence length variance and organic syntactic rhythm characteristic of human writing."
+        : "Mixed distribution of sentence lengths and varied transition structures.";
 
   return (
     <div className="rounded-lg border border-border/80 bg-secondary/20 p-5 space-y-4">
@@ -127,12 +129,12 @@ export const WhyThisScore: FC<WhyThisScoreProps> = ({ rawResult }) => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-        {/* AI Probability Evidence */}
+        {/* Card 1: AI Writing Indicators */}
         <div className="rounded-md border border-border/50 bg-card p-3.5 space-y-2 flex flex-col justify-between">
           <div className="space-y-2">
             <div className="flex items-center gap-1.5 font-medium text-primary">
               <Bot className="h-3.5 w-3.5 text-primary/70" />
-              <span>AI Probability ({aiScore}%)</span>
+              <span>AI Writing Indicators ({aiScore}%)</span>
             </div>
             <ul className="space-y-1.5 text-primary/70">
               {notableAiReasons.map((reason, idx) => (
@@ -146,7 +148,7 @@ export const WhyThisScore: FC<WhyThisScoreProps> = ({ rawResult }) => {
           {topSnippets.length > 0 && topSnippets[0] && (
             <div className="border-t border-border/40 pt-2 mt-2">
               <span className="text-[10px] text-primary/40 block mb-1 uppercase tracking-wider">
-                Observed Snippet
+                Observed Synthetic Passage
               </span>
               <p
                 className="text-[11px] italic text-primary/60 truncate"
@@ -158,18 +160,23 @@ export const WhyThisScore: FC<WhyThisScoreProps> = ({ rawResult }) => {
           )}
         </div>
 
-        {/* Originality Evidence */}
+        {/* Card 2: Human Authorship Signals */}
         <div className="rounded-md border border-border/50 bg-card p-3.5 space-y-2 flex flex-col justify-between">
           <div className="space-y-2">
             <div className="flex items-center gap-1.5 font-medium text-primary">
-              <CheckCircle2 className="h-3.5 w-3.5 text-primary/70" />
-              <span>Originality ({origScore}%)</span>
+              <UserCheck className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
+              <span>Human Authenticity ({humanScore}%)</span>
             </div>
-            <p className="text-primary/70 leading-relaxed">
-              {originalityInsight}
-            </p>
+            <ul className="space-y-1.5 text-primary/70">
+              {notableHumanReasons.map((reason, idx) => (
+                <li key={idx} className="flex items-start gap-1.5">
+                  <span className="text-primary/40 shrink-0 mt-0.5">•</span>
+                  <span>{reason}</span>
+                </li>
+              ))}
+            </ul>
           </div>
-          {topSnippets.length > 1 && topSnippets[1] && (
+          {topSnippets.length > 1 && topSnippets[1] ? (
             <div className="border-t border-border/40 pt-2 mt-2">
               <span className="text-[10px] text-primary/40 block mb-1 uppercase tracking-wider">
                 Notable Excerpt
@@ -181,23 +188,29 @@ export const WhyThisScore: FC<WhyThisScoreProps> = ({ rawResult }) => {
                 "{topSnippets[1].textSnippet}"
               </p>
             </div>
+          ) : (
+            <div className="border-t border-border/40 pt-2 mt-2">
+              <span className="text-[10px] text-primary/40 block">
+                Linguistic variance & organic stylistic check
+              </span>
+            </div>
           )}
         </div>
 
-        {/* Similarity Risk Evidence */}
+        {/* Card 3: Sentence Burstiness & Structure */}
         <div className="rounded-md border border-border/50 bg-card p-3.5 space-y-2 flex flex-col justify-between">
           <div className="space-y-2">
             <div className="flex items-center gap-1.5 font-medium text-primary">
-              <FileText className="h-3.5 w-3.5 text-primary/70" />
-              <span>Similarity Risk ({simScore}%)</span>
+              <Activity className="h-3.5 w-3.5 text-blue-500" />
+              <span>Sentence Cadence & Burstiness</span>
             </div>
             <p className="text-primary/70 leading-relaxed">
-              {similarityInsight}
+              {burstinessInsight}
             </p>
           </div>
           <div className="border-t border-border/40 pt-2 mt-2">
             <span className="text-[10px] text-primary/40 block">
-              Internal document structural check
+              Syntactic rhythm & entropy analysis
             </span>
           </div>
         </div>
@@ -205,3 +218,4 @@ export const WhyThisScore: FC<WhyThisScoreProps> = ({ rawResult }) => {
     </div>
   );
 };
+
