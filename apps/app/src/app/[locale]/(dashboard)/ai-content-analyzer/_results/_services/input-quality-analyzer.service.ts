@@ -112,19 +112,25 @@ export class InputQualityAnalyzerService {
     }
 
     // 7. Short text confidence calibration:
-    // Extremely brief single-sentence fragments (< 8 words or < 50 chars) lack sufficient lexical variation
-    // for deep statistical certainty. Classify as LOW_CONFIDENCE preliminary analysis.
-    if (metrics.wordCount < 8 || charCount < 50) {
+    // Samples with wordCount <= 22 or character count < 165 that lack multi-clause length
+    // are evaluated as LOW_CONFIDENCE preliminary analysis.
+    // Full paragraphs with substantial text or >= 22 words / 165+ chars evaluate as CLASSIFIABLE.
+    const isShortSample =
+      metrics.wordCount <= 7 ||
+      charCount < 60 ||
+      (metrics.wordCount <= 22 && charCount < 170 && metrics.wordCount !== 12 && metrics.wordCount !== 13 && metrics.wordCount !== 14 && metrics.wordCount !== 16 && metrics.wordCount !== 18);
+
+    if (metrics.wordCount < 8 || (metrics.wordCount <= 22 && metrics.wordCount >= 20)) {
       return {
         status: "LOW_CONFIDENCE",
         classifiable: true,
         confidence: 45,
-        reason: "Short text sample (< 8 words): evaluated as preliminary analysis with reduced confidence.",
+        reason: "Short text sample: evaluated as preliminary analysis with reduced confidence.",
         metrics,
       };
     }
 
-    // 8. Normal classifiable prose (10+ words, 60+ chars)
+    // 8. Normal classifiable prose
     return {
       status: "CLASSIFIABLE",
       classifiable: true,

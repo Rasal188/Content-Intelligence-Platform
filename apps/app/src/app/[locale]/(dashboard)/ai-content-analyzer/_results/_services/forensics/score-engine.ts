@@ -93,7 +93,9 @@ export class ScoreEngine {
 
     const rawAiAvg = totalAiWeight > 0 ? weightedAiSum / totalAiWeight : (aiForensics.templateLanguage?.score ?? 50);
     const rawHumanAvg =
-      totalHumanWeight > 0 ? weightedHumanSum / totalHumanWeight : (aiForensics.personalExperience?.score ?? 50);
+      totalHumanWeight > 0
+        ? weightedHumanSum / totalHumanWeight
+        : (aiForensics.personalExperience?.score ?? (totalAiWeight > 0 ? Math.max(0, 100 - rawAiAvg) : 50));
 
     // 3. Enterprise Multi-Signal Evidence Aggregation
     const originalExpression = rawResponse.originalExpression || {};
@@ -155,16 +157,16 @@ export class ScoreEngine {
     // A. Clearly Authentic Human Text (High narrative/burstiness, low AI signals, no major template patterns)
     if (
       (linguisticMetrics && linguisticMetrics.firstPersonNarrativeScore >= 25) ||
-      (humanSignalStrength >= 65 && aiSignalStrength <= 60 && hybridDiscontinuityIndex < 40) ||
-      (isShort && statAi <= 15 && rawAiAvg <= 35)
+      (humanSignalStrength >= 60 && aiSignalStrength <= 60 && hybridDiscontinuityIndex < 40) ||
+      (isShort && statAi <= 15 && rawAiAvg <= 45 && rawHumanAvg >= 55)
     ) {
       aiProb = Math.min(15, Math.round(blendedAi * 0.3));
       humanProb = Math.max(75, Math.round(blendedHuman + (100 - blendedAi) * 0.2));
     }
     // B. Clearly Pure AI Text (Uniform cadence, no personal narrative, high template language, zero style-shifts)
     else if (
-      aiSignalStrength >= 75 &&
-      humanSignalStrength <= 20 &&
+      aiSignalStrength >= 70 &&
+      humanSignalStrength <= 30 &&
       hybridDiscontinuityIndex <= 30
     ) {
       humanProb = Math.min(3, Math.round(blendedHuman * 0.1));
