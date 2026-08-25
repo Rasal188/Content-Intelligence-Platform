@@ -1057,9 +1057,15 @@ export class WebPlagiarismMatcher {
       const rankedQueries: any[] = eligibleQueries.sort((a, b) => b.score - a.score);
 
       console.log(`[DISCOVERY:METRICS] Generated queries: ${totalGenerated} | Rejected queries: ${rejectedQueries.length} | Eligible queries: ${eligibleQueries.length}`);
-      console.log(`[DISCOVERY:TOP_CANDIDATES]\n` + rankedQueries.slice(0, 10).map((q, idx) => 
-        `  #${idx + 1} score=${q.score} (qual=${q.qualityCategory}) strat=${q.strategy} query="${q.query}" reasons=[${(q.reasons || []).join("; ")}]`
-      ).join("\n"));
+      console.log(
+        `[DISCOVERY:TOP_CANDIDATES]\n${rankedQueries
+          .slice(0, 10)
+          .map(
+            (q, idx) =>
+              `  #${idx + 1} score=${q.score} (qual=${q.qualityCategory}) strat=${q.strategy} query="${q.query}" reasons=[${(q.reasons || []).join("; ")}]`,
+          )
+          .join("\n")}`,
+      );
 
       // Jaccard Query Diversity & Document Dispersion Selection Helper
       const calculateJaccard = (setA: Set<string>, setB: Set<string>): number => {
@@ -1277,9 +1283,11 @@ export class WebPlagiarismMatcher {
         executedQueries.add(c.query.toLowerCase());
       }
 
-      console.log(`[DISCOVERY:SELECTED_QUERIES] Selected ${pass1Selected.length} queries for Pass 1:\n` + pass1Selected.map((q, idx) =>
-        `  #${idx + 1} score=${q.score} strat=${q.strategy} query="${q.query}"`
-      ).join("\n"));
+      console.log(
+        `[DISCOVERY:SELECTED_QUERIES] Selected ${pass1Selected.length} queries for Pass 1:\n${pass1Selected
+          .map((q, idx) => `  #${idx + 1} score=${q.score} strat=${q.strategy} query="${q.query}"`)
+          .join("\n")}`,
+      );
 
       const pass1Results = await executeSequentialSearchQueries(pass1Selected, "Pass 1");
       allSearchResults.push(...pass1Results);
@@ -1680,13 +1688,16 @@ export class WebPlagiarismMatcher {
             const parentHost = parentParsed.hostname.toLowerCase();
             // Extract Markdown/HTML links: [anchor](url) or href="url"
             const linkRegex = /\[([^\]]+)\]\((https?:\/\/[^\s\)]+|\/[^\s\)]+)\)|href=["'](https?:\/\/[^"']+|\/[^"']+)["']/gi;
-            let linkMatch: RegExpExecArray | null;
             const extractedLinks: Array<{ linkUrl: string; anchor: string; score: number }> = [];
 
-            while ((linkMatch = linkRegex.exec(res.text)) !== null) {
+            let linkMatch = linkRegex.exec(res.text);
+            while (linkMatch !== null) {
               const rawAnchor = linkMatch[1] || "";
               const rawHref = linkMatch[2] || linkMatch[3] || "";
-              if (!rawHref) continue;
+              if (!rawHref) {
+                linkMatch = linkRegex.exec(res.text);
+                continue;
+              }
 
               let absoluteUrl = "";
               try {
@@ -1700,7 +1711,10 @@ export class WebPlagiarismMatcher {
                 }
               } catch {}
 
-              if (!absoluteUrl) continue;
+              if (!absoluteUrl) {
+                linkMatch = linkRegex.exec(res.text);
+                continue;
+              }
               const linkLower = absoluteUrl.toLowerCase();
               // Exclude non-content endpoints
               if (
@@ -1716,12 +1730,13 @@ export class WebPlagiarismMatcher {
                 linkLower.includes(".js") ||
                 linkLower.endsWith("/feed")
               ) {
+                linkMatch = linkRegex.exec(res.text);
                 continue;
               }
 
               // Relevance scoring for sibling link
               let linkScore = 0;
-              const pathKeywords = (rawAnchor + " " + absoluteUrl).toLowerCase().replace(/[^a-z0-9]/g, " ");
+              const pathKeywords = `${rawAnchor} ${absoluteUrl}`.toLowerCase().replace(/[^a-z0-9]/g, " ");
               for (const kw of rareTerms) {
                 if (pathKeywords.includes(kw)) linkScore += 15;
               }
@@ -1732,6 +1747,7 @@ export class WebPlagiarismMatcher {
               if (linkScore >= 20) {
                 extractedLinks.push({ linkUrl: absoluteUrl, anchor: rawAnchor, score: linkScore });
               }
+              linkMatch = linkRegex.exec(res.text);
             }
 
             // Sort sibling links descending by relevance and add top 3 to candidate queue

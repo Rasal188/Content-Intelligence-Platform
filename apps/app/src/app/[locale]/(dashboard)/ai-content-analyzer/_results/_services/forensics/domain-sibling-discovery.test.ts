@@ -4,7 +4,7 @@ import { DeterministicMatcher } from "./deterministic-matcher";
 import type { MatchedSource } from "../../_types/analysis-source.types";
 
 describe("Domain Sibling Discovery & Controlled Internal Link Suite", () => {
-  const sampleText = `NETWORKERS HOME is restructuring its CCIE Security program into a non-placement, lab-only bootcamp exclusively for working professionals. Over the past four years, 90% of security hiring has shifted to cloud-delivered and product-based security roles, including platforms such as Check Point, Palo Alto, Fortinet, Zscaler, Akamai, Skyhigh, Barracuda, and Ruckus.`;
+  const sampleText = "NETWORKERS HOME is restructuring its CCIE Security program into a non-placement, lab-only bootcamp exclusively for working professionals. Over the past four years, 90% of security hiring has shifted to cloud-delivered and product-based security roles, including platforms such as Check Point, Palo Alto, Fortinet, Zscaler, Akamai, Skyhigh, Barracuda, and Ruckus.";
 
   // 1. Dynamic domain extraction and domain query generation
   test("1. Sibling discovery identifies same-domain links and excludes external domains", () => {

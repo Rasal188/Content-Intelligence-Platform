@@ -210,7 +210,7 @@ export class OllaGraphScraperService {
       if (!res.ok) {
         if (res.status === 429) {
           const retryHeader = res.headers.get("retry-after");
-          const retrySeconds = retryHeader ? Math.min(5, Math.max(1, parseInt(retryHeader, 10) || 2)) : 2;
+          const retrySeconds = retryHeader ? Math.min(5, Math.max(1, Number.parseInt(retryHeader, 10) || 2)) : 2;
           return {
             status: "RATE_LIMITED",
             url: targetUrl,

@@ -47,11 +47,11 @@ export class InputQualityAnalyzerService {
         classifiable: false,
         confidence: 0,
         reason: "Insufficient text length for reliable AI analysis.",
-        metrics: this.computeMetrics(trimmed),
+        metrics: InputQualityAnalyzerService.computeMetrics(trimmed),
       };
     }
 
-    const metrics = this.computeMetrics(trimmed);
+    const metrics = InputQualityAnalyzerService.computeMetrics(trimmed);
 
     // 2. URL Only check
     if (metrics.isUrlOnly) {
@@ -89,7 +89,7 @@ export class InputQualityAnalyzerService {
     // 5. Single unsegmented random string (e.g. "syasydfvsufvofsagftasyfgaiufyafssfvy")
     if (metrics.wordCount === 1 && charCount > 25 && metrics.alphabeticRatio > 0.8) {
       // Check vowel/consonant distribution or consonant clusters in Latin script
-      if (metrics.detectedScript === "latin" && this.isRandomGibberish(trimmed)) {
+      if (metrics.detectedScript === "latin" && InputQualityAnalyzerService.isRandomGibberish(trimmed)) {
         return {
           status: "INSUFFICIENT",
           classifiable: false,
@@ -112,19 +112,19 @@ export class InputQualityAnalyzerService {
     }
 
     // 7. Short text confidence calibration:
-    // Samples with < 30 meaningful words lack sufficient statistical sample size for deep forensic certainty.
-    // Classify as LOW_CONFIDENCE preliminary analysis.
-    if (metrics.wordCount < 30 || charCount < 180) {
+    // Extremely brief single-sentence fragments (< 8 words or < 50 chars) lack sufficient lexical variation
+    // for deep statistical certainty. Classify as LOW_CONFIDENCE preliminary analysis.
+    if (metrics.wordCount < 8 || charCount < 50) {
       return {
         status: "LOW_CONFIDENCE",
         classifiable: true,
         confidence: 45,
-        reason: "Short text sample (< 30 words): evaluated as preliminary analysis with reduced confidence.",
+        reason: "Short text sample (< 8 words): evaluated as preliminary analysis with reduced confidence.",
         metrics,
       };
     }
 
-    // 8. Normal classifiable prose (30+ words)
+    // 8. Normal classifiable prose (10+ words, 60+ chars)
     return {
       status: "CLASSIFIABLE",
       classifiable: true,

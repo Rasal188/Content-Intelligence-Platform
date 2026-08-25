@@ -4,7 +4,7 @@ import { DeterministicMatcher } from "./deterministic-matcher";
 import type { MatchedSource } from "../../_types/analysis-source.types";
 
 describe("Plagiarism Multi-Query Discovery & Ranking Regression Suite", () => {
-  const samplePassage = `NETWORKERS HOME is restructuring its CCIE Security program into a non-placement, lab-only bootcamp exclusively for working professionals. Over the past four years, 90% of security hiring has shifted to cloud-delivered and product-based security roles, including platforms such as Check Point, Palo Alto, Fortinet, Zscaler, Akamai, Skyhigh, Barracuda, and Ruckus.`;
+  const samplePassage = "NETWORKERS HOME is restructuring its CCIE Security program into a non-placement, lab-only bootcamp exclusively for working professionals. Over the past four years, 90% of security hiring has shifted to cloud-delivered and product-based security roles, including platforms such as Check Point, Palo Alto, Fortinet, Zscaler, Akamai, Skyhigh, Barracuda, and Ruckus.";
 
   // 1. Long natural-language query failure is mitigated by shorter distinctive queries.
   test("1. Multi-strategy query generation produces exact distinctive, short, and entity queries", () => {

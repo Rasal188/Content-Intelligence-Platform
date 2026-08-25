@@ -80,7 +80,7 @@ function isPrivateOrReservedIPv6(ip: string): boolean {
   // IPv4-mapped IPv6 (::ffff:127.0.0.1, ::ffff:10.0.0.1, etc.)
   if (cleanIp.startsWith("::ffff:") || cleanIp.startsWith("0:0:0:0:0:ffff:")) {
     const ipv4Part = cleanIp.split(":").pop();
-    if (ipv4Part && ipv4Part.includes(".")) {
+    if (ipv4Part?.includes(".")) {
       return isPrivateOrReservedIPv4(ipv4Part);
     }
   }

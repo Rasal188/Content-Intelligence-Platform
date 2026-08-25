@@ -64,14 +64,14 @@ export class DeterministicMatcher {
       .replace(/&#8212;/g, "-")
       .replace(/&#(\d+);/g, (_, num) => {
         try {
-          return String.fromCharCode(parseInt(num, 10));
+          return String.fromCharCode(Number.parseInt(num, 10));
         } catch {
           return " ";
         }
       })
       .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => {
         try {
-          return String.fromCharCode(parseInt(hex, 16));
+          return String.fromCharCode(Number.parseInt(hex, 16));
         } catch {
           return " ";
         }
@@ -80,8 +80,8 @@ export class DeterministicMatcher {
     // 2. Unicode normalization (NFKC)
     clean = clean.normalize("NFKC");
 
-    // 3. Strip zero-width characters
-    clean = clean.replace(/[\u200B-\u200D\uFEFF]/g, "");
+    // 3. Strip zero-width characters (\u200B zero-width space, \u200C zero-width non-joiner, \u200D zero-width joiner, \uFEFF BOM)
+    clean = clean.replace(/\u200B|\u200C|\u200D|\uFEFF/g, "");
 
     // 4. Convert all Unicode whitespace to normal space
     clean = clean.replace(/[\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000]/g, " ");

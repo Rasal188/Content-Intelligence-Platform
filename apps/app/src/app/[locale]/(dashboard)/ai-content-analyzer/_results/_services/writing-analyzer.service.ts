@@ -96,13 +96,13 @@ export class WritingAnalyzerService {
     const avgLength = sentenceLengths.length > 0 ? words.length / sentenceLengths.length : 0;
     const variance =
       sentenceLengths.length > 0
-        ? sentenceLengths.reduce((acc, len) => acc + Math.pow(len - avgLength, 2), 0) / sentenceLengths.length
+        ? sentenceLengths.reduce((acc, len) => acc + (len - avgLength) ** 2, 0) / sentenceLengths.length
         : 0;
 
     // Detect filler phrases
     let fillerCount = 0;
     const detectedFillers = new Set<string>();
-    for (const pattern of this.FILLER_PATTERNS) {
+    for (const pattern of WritingAnalyzerService.FILLER_PATTERNS) {
       const matches = clean.match(pattern);
       if (matches) {
         fillerCount += matches.length;
@@ -146,7 +146,7 @@ export class WritingAnalyzerService {
     // Extract tech terms present in text
     const technicalTerms: string[] = [];
     const lowerClean = clean.toLowerCase();
-    for (const term of this.COMMON_TECH_TERMS) {
+    for (const term of WritingAnalyzerService.COMMON_TECH_TERMS) {
       if (lowerClean.includes(term.toLowerCase())) {
         technicalTerms.push(term);
       }

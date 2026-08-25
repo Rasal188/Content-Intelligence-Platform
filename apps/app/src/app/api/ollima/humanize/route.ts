@@ -93,11 +93,7 @@ export async function POST(req: Request) {
       analysis.protectedElements.numbers.length > 0 ||
       analysis.protectedElements.urls.length > 0 ||
       analysis.protectedElements.codeSnippets.length > 0
-        ? `\n\n[STRICTLY PROTECTED TECHNICAL ELEMENTS - DO NOT ALTER]:\n` +
-          `- Metrics/Numbers: ${analysis.protectedElements.numbers.join(", ") || "None"}\n` +
-          `- Technical Terminology: ${analysis.protectedElements.technicalTerms.join(", ") || "None"}\n` +
-          `- URLs & Endpoints: ${analysis.protectedElements.urls.join(", ") || "None"}\n` +
-          `- Code Snippets: ${analysis.protectedElements.codeSnippets.join(", ") || "None"}`
+        ? `\n\n[STRICTLY PROTECTED TECHNICAL ELEMENTS - DO NOT ALTER]:\n- Metrics/Numbers: ${analysis.protectedElements.numbers.join(", ") || "None"}\n- Technical Terminology: ${analysis.protectedElements.technicalTerms.join(", ") || "None"}\n- URLs & Endpoints: ${analysis.protectedElements.urls.join(", ") || "None"}\n- Code Snippets: ${analysis.protectedElements.codeSnippets.join(", ") || "None"}`
         : "";
 
     const writingIssuesHint =
@@ -105,11 +101,7 @@ export async function POST(req: Request) {
         ? `\n\n[WRITING QUALITY SIGNALS TO IMPROVE]:\n${analysis.issues.map((iss) => `- ${iss}`).join("\n")}`
         : "";
 
-    const userPromptEnriched =
-      `Target Style Register: ${style.toUpperCase()}\n` +
-      `Original Text:\n${text}` +
-      protectedElementsHint +
-      writingIssuesHint;
+    const userPromptEnriched = `Target Style Register: ${style.toUpperCase()}\nOriginal Text:\n${text}${protectedElementsHint}${writingIssuesHint}`;
 
     const { system: systemPrompt } = HumanizerPromptBuilder.buildPrompt(text);
 
@@ -158,7 +150,7 @@ export async function POST(req: Request) {
     };
 
     try {
-      let response = await executeCompletion(userPromptEnriched);
+      const response = await executeCompletion(userPromptEnriched);
 
       if (!response.ok) {
         return NextResponse.json(

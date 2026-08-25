@@ -6,7 +6,7 @@ import type { MatchedSource } from "../../_types/analysis-source.types";
 describe("Distinctiveness & Query Quality Ranking Invariant Suite", () => {
   // TEST 1: Clean numeric fingerprint outranks malformed abbreviation query
   test("TEST 1: A clean numeric fingerprint query outranks a malformed abbreviation query", async () => {
-    const text = `The team tracked consumption in AI Credits (AICs), yet the bill spanned 27x from cheapest to most expensive.`;
+    const text = "The team tracked consumption in AI Credits (AICs), yet the bill spanned 27x from cheapest to most expensive.";
     const numericRegex = /\b\$?\d+(?:,\d{3})*(?:\.\d+)?(?:x|%|k|m|b|g|t|M|B|K|X|-day|-word|-hour|-min|-year)?\b/i;
     expect(numericRegex.test("27x")).toBe(true);
   });
